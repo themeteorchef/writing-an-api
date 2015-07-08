@@ -5,18 +5,10 @@
 
 Router.route('index', {
   path: '/',
-  template: 'index',
-  subscriptions: function(){
-    return Meteor.subscribe('examplePublication');
-    /* 
-    return [
-      Meteor.subscribe('examplePublication'),
-      Meteor.subscribe('examplePublication2')
-    ];
-    */
-  },
-  onBeforeAction: function(){
-    // Code to run before route goes here.
-    this.next();
-  }
+  template: 'index'
+});
+
+Router.route('apiKey', {
+  path: '/api-key',
+  template: 'apiKey'
 });

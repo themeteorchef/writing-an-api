@@ -1,10 +1,10 @@
-Example = new Meteor.Collection('example');
+APIKeys = new Meteor.Collection('api-keys');
 
 /*
 * Allow
 */
 
-Example.allow({
+APIKeys.allow({
   insert: function(){
     // Disallow inserts on the client by default.
     return false;
@@ -23,7 +23,7 @@ Example.allow({
 * Deny
 */
 
-Example.deny({
+APIKeys.deny({
   insert: function(){
     // Deny inserts on the client by default.
     return true;

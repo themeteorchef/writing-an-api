@@ -4,14 +4,6 @@
 */
 
 /*
-* Created
-*/
-
-Template.signup.onCreated(function(){
-  // Code to run when template is created goes here.
-});
-
-/*
 * Rendered
 */
 
@@ -45,25 +37,17 @@ Template.signup.onRendered(function(){
       }
 
       // Create the user's account.
-      Accounts.createUser({email: user.email, password: user.password}, function(error){
+      Accounts.createUser({email: user.email, password: user.password}, function( error ){
         if(error){
           Bert.alert(error.reason, 'danger');
         } else {
+          var userId = Meteor.userId();
           Bert.alert('Welcome!', 'success');
+          Meteor.call( "initApiKey", userId );
         }
       });
     }
   });
-});
-
-/*
-* Helpers
-*/
-
-Template.signup.helpers({
-  example: function(){
-    // Code to run for helper function.
-  }
 });
 
 /*

@@ -5,5 +5,6 @@
 */
 
 customBrowserPolicies = function(){
-  // Define any custom browser policies here.
-}
+  // Font Awesome
+  BrowserPolicy.content.allowOriginForAll('maxcdn.bootstrapcdn.com');
+};
