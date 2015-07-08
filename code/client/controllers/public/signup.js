@@ -31,10 +31,10 @@ Template.signup.onRendered(function(){
     },
     submitHandler: function(){
       // Grab the user's details.
-      user = {
+      var user = {
         email: $('[name="emailAddress"]').val(),
         password: $('[name="password"]').val()
-      }
+      };
 
       // Create the user's account.
       Accounts.createUser({email: user.email, password: user.password}, function( error ){

@@ -7,7 +7,7 @@ generateTestAccounts = function(){
   // Create an array of user accounts.
   var users = [
     { name: "Admin", email: "admin@admin.com", password: "password" }
-  ]
+  ];
 
   // Loop through array of user accounts.
   for(i=0; i < users.length; i++){
@@ -17,13 +17,15 @@ generateTestAccounts = function(){
 
     // If an existing user is not found, create the account.
     if ( !checkUser ) {
-      Accounts.createUser({
+      var user = Accounts.createUser({
         email: userEmail,
         password: users[i].password,
         profile: {
           name: users[i].name
         }
       });
+
+      Meteor.call( "initApiKey", user );
     }
   }
-}
+};
