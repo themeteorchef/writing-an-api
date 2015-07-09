@@ -398,7 +398,7 @@ API.resources.pizza.delete( function() {
 
 See what's going on? Instead of chaining our method calls like the example from Iron Router, here, we break each one up, tethering it back to our route definition in our API object. The reason we're placing this in a separate file is for the sake of clarity. Our example here only has one resource, but a real API could have several. Breaking each resource into its own file can help you better understand what calls are related to what resource. No spaghetti!
 
-![Exploding spaghetti](http://media.giphy.com/media/BGogoDla5iydi/giphy.gif)
+<!--![Exploding spaghetti](http://media.giphy.com/media/BGogoDla5iydi/giphy.gif) -->
 
 <div class="note">
   <h3>API Versioning</h3>
@@ -433,6 +433,10 @@ API.resources.pizza.delete( function() {
 });
 ```
 
+Woah buddy. What the heck is going on here? Each of our requests will need to perform some common tasks like authentication and getting data _out of the request_. The `handleRequest` function that we're going to define below will be responsible for taking in arguments specific to the type of request and then _delegating_ those to the right methods. Let that sink in. Think of `handleRequst` like the post office clerk sorting mail. It will put the right letters (requests) into the right mailboxes (methods). Stick with me, this will start to make sense in a bit.
+
+Here, we're passing three arguments: `context`, `resource`, and `method`. `context` being passed as `this` is referring to the context within which `handleRequest` is being called, or, _the current request_ being made to the API. `resource` is simply referring to the resource we want to interact with and `method` is the type of method we're trying to perform. Let's hop over to the definition for `handleRequest` to see how this is wired up.
+
 <p class="block-header">/server/api/config/api.js</p>
 
 ```javascript
@@ -447,9 +451,86 @@ API = {
   }
 };
 ```
-Whaaaaat is this?! Don't panic. Let's step through it. 
+Whaaaaat is this?! Don't panic. Again, we're just delegating here. Because there are a handful of steps to perform _before_ we get to interacting with the API, we want to divvy up each task to _a single function_. This helps not only with reusability, but makes it easier to come back to our code later and understand how information is flowing. We'll look at this line by line. Get ready for a bit of Inception.
+
+#### API.connection
+When a user "connects" to our API, we need to do two things: authenticate their access and pull the relevant data out of their request. Let's take a look.
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  connection: function( request ) {
+    var apiKey    = request.headers[ 'x-api-key' ],
+        validUser = API.authentication( apiKey );
+
+    if ( validUser ) {
+      var getRequestContents = API.utility.getRequestContents( request ),
+          requestData        = { "owner": validUser, data: getRequestContents };
+      return requestData;
+    } else {
+      return { error: 401, message: "Invalid API key." };
+    }
+  }
+};
+```
+
+Hang in there. This first step, `connection` is responsible for pulling apart our request to get some information. First, we need to get our user's API key. In order to authenticate each of their requests, we ask that our users pass their API key as part of the HTTP request's `headers`. What are those?
+
+> HTTP header fields are components of the header section of request and response messages in the Hypertext Transfer Protocol (HTTP). They define the operating parameters of an HTTP transaction.
+
+We'll see how our user sets these later. For now, just know that we ask our users to store their API key in the `headers` object as a parameter labeled `x-api-key`. To make this a little clearer, here is how this is structured:
+
+```javascript
+request: {
+  headers: {
+    "x-api-key": "Our users API key is here."
+  }
+}
+```
+Next, we need to jump down another level and check whether or not the API key they've passed is _valid_. To do this, we've created another function `API.authentication()`.
 
 #### Authenticating requests
+
+Our authentication process is pretty simple. We want to do two things:
+1. Make sure the API key we've received actually _exists_.
+2. Get the `owner` field for that key (the user's ID).
+
+```javascript
+API = {
+  authentication: function( apiKey ) {
+    var getUser = APIKeys.findOne( { "key": apiKey }, { fields: { "owner": 1 } } );
+    if ( getUser ) {
+      return getUser.owner;
+    } else {
+      return false;
+    }
+  }
+}
+```
+
+Pretty simple, right? We do a `findOne` on our `APIKeys` collection for the key passed by the user. We pass a `fields` projection to retrieve just the `owner` field (our user's ID). If we get a user (meaning our `findOne` doesn't return as `undefined` but as an object), we return the `owner` field. If we don't find a matching API key, we return false. Let's jump back up a level and see how this works.
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  connection: function( request ) {
+    var apiKey    = request.headers[ 'x-api-key' ],
+        validUser = API.authentication( apiKey );
+
+    if ( validUser ) {
+      var getRequestContents = API.utility.getRequestContents( request ),
+          requestData        = { "owner": validUser, data: getRequestContents };
+      return requestData;
+    } else {
+      return { error: 401, message: "Invalid API key." };
+    }
+  }
+};
+```
+See how we're assigning the result of `API.authentication()` to the `validUser` variable? This is allowing us to halt the request and return an error if the API key we've received is invalid.
+
 ### Handling responses
 ### Consuming the API
 ### Wrap Up & Summary
