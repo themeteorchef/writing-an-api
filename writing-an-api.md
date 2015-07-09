@@ -367,7 +367,44 @@ API = {
   },
 };
 ``` 
+Notice that here, we're pulling in everything _before_ each of the methods corresponding to verbs. This allows us to keep all of our resource definitions together and easily update URLs. 
 
+<div class="note">
+  <h3>Organization Style</h3>
+  <p>You don't have to split your definitions like this. I'm doing this here to consolidate things for the sake of organization. Defining your resources like it's shown in the Iron Router documentation will not break anything in this recipe.
+</div> 
+
+Okay, what about the other part? Let's check it out. 
+
+<p class="block-header">/server/api/resources/pizza.js</p>
+
+```javascript
+API.resources.pizza.get( function() {
+  // We'll handle GET requests here.
+});
+
+API.resources.pizza.post( function() {
+  // We'll handle POST requests here.
+});
+
+API.resources.pizza.put( function() {
+  // We'll handle PUT requests here.
+});
+
+API.resources.pizza.delete( function() {
+  // We'll handle DELETE requests here.
+});
+```
+
+See what's going on? Instead of chaining our method calls like the example from Iron Router, here, we break each one up, tethering it back to our route definition in our API object. The reason we're placing this in a separate file is for the sake of clarity. Our example here only has one resource, but a real API could have several. Breaking each resource into its own file can help you better understand what calls are related to what resource. No spaghetti!
+
+![Exploding spaghetti](http://media.giphy.com/media/BGogoDla5iydi/giphy.gif)
+
+<div class="note">
+  <h3>API Versioning</h3>
+  <p>You may have noticed that the URL for our endpoints is prefixed with /api/v1. What's that? Just like a piece of software, we want to version our API so that consumers of our API know what functionality they have access to. For example, we might want to change an endpoint's URL but we don't want to break the existing version. What we can do, then, is create a new version of our API, prefixing all new URLs with the new version. Because this is the <em>first</em> iteration of our API, we prefix all of our URLs with /api/v1/.</p>
+<p>This is honestly a bit heady and confusing. I highly recommend checking out <a href="http://www.heavybit.com/library/video/2014-09-30-amber-feng">this talk by Amber Feng from Stripe</a>. In it she discusses some of the design principles behind their API. It's well worth the half hour if you want to start thinking seriously about the design of your API. Food for thought!</p>
+</div>
 
 ### Authenticating requests
 ### Handling responses
