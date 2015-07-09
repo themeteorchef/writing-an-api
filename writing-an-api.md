@@ -252,11 +252,10 @@ Meteor.methods({
   regenerateApiKey: function( userId ){
     check( userId, String );
 
-    var getUsersKey = APIKeys.findOne( { "owner": userId }, { fields: { "key": 1 } } ),
-        newKey      = Random.hexString( 32 );
+    var newKey = Random.hexString( 32 );
 
     try {
-      var keyId = APIKeys.update( getUsersKey._id, {
+      var keyId = APIKeys.update( { "owner": userId }, {
         $set: {
           "key": newKey
         }
@@ -269,11 +268,70 @@ Meteor.methods({
 });
 ```
 
-Almost identical to our `initApiKey` method from our signup flow, but with one small difference. Because we want to update an existing key, we first want to look up the key in the database by the user's ID and then set the key. Cool! With this in place, our user can click and confirm the regeneration on the client and get a fresh key in the input field we set up. Party!
+Almost identical to our `initApiKey` method from our signup flow, but with one small difference. Because we want to update an existing API key, we first want to look up the key in the database by the user's ID and _then_ set the key. Cool! With this in place, our user can click and confirm the regeneration on the client and get a fresh key in the input field we set up. Party!
 
-With that in place, we're ready to rock on implementing our actual API. We'll start by setting up our resources in the form of server side routes.
+Things are lookin great! We're ready to rock on implementing our actual API. We'll start by setting up the structure of our API so working on it is a little easier.
+
+### Setting up our API
+
+_How_ we structure our API is just as important the functionality that API provides. Technically speaking, our API is just another interface into our application, albeit not visual. Just like a graphical interface, though, we need to be considerate of how our API is organized because:
+
+1. It makes it easier for our users to interact with.
+2. It makes it easier for _us_ to maintain and expand.
+
+With that, said, let's look at our folder structure real quick.
+
+```bash
+/server
+--- /api
+------ /config
+--------- api.js
+------ /resources
+--------- pizza.js
+```
+
+What's going on here? First, we treat our API almost like a separate application. Even though it's stored in the `/server` directory of our app, all of the code related to the API is sectioned off in its own directory. This is mostly for clarity and helps us to separate concerns around what code is responsible for what actions. Second, we break up the API into its different pieces. 
+
+For this recipe, we have two parts: configuration and resources. Configuration—and more specifically our `api.js` file—is where we'll store a single object containing all of the methods and functions our API needs to function. Resources, on the other hand, are where we keep the available actions for each type of data. We'll only showcase one resource in this recipe, but a real API is likely to have multiple resources so its good to demonstrate the separation.
+
+#### A single API object
+
+To keep things simple and act as an aid to help us keep our code [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself), we've defined a single object—set to the global variable `API`—in `/api/config/api.js` containing all of the code for our API. Let's take a look at the skeleton of the API to see what we mean.
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  authentication: function( apiKey ) {},
+  connection: function( request ) {},
+  handleRequest: function( context, resource, method ) {},
+  methods: {
+    pizza: {
+      get: function( context, connection ) {},
+      post: function( context, connection ) {},
+      put: function( context, connection ) {},
+      delete: function( context, connection ) {}
+    }
+  },
+  resources: {},
+  utility: {
+    getRequestContents: function( request ) {},
+    hasData: function( data ) {},
+    response: function( context, statusCode, data ) {},
+    validate: function( data, pattern ) {}
+  }
+};
+```
+Wow! This is a lot. Don't worry, we'll step through each piece so it makes sense. All we want to point out here is that we're consolidating everything in our API into one place. Again, this is just an organizational technique to slim down our code and make it easier to reason about what functionality we have access to. As we build out each of the objects and functions inside of our `API` object, you will start to see why this structure is convenient.
+
+Let's get started by adding our resources.
 
 ### Defining our resources
+
+Recall that a resource is simply the thing in our application that a user is consuming. In order for them to consume it, we need to make that resource accessible at an _endpoint_. Again, an endpoint is simply a fancy name for a URL (or URI depending on [which way your door swings](https://danielmiessler.com/study/url_vs_uri/)). To do this, we're going to use Iron Router's server side routing feature, and more specifically, the convenient RESTful API given to us by the package.
+
+
+
 ### Authenticating requests
 ### Handling responses
 ### Consuming the API
