@@ -328,8 +328,45 @@ Let's get started by adding our resources.
 
 ### Defining our resources
 
-Recall that a resource is simply the thing in our application that a user is consuming. In order for them to consume it, we need to make that resource accessible at an _endpoint_. Again, an endpoint is simply a fancy name for a URL (or URI depending on [which way your door swings](https://danielmiessler.com/study/url_vs_uri/)). To do this, we're going to use Iron Router's server side routing feature, and more specifically, the convenient RESTful API given to us by the package.
+Recall that a resource is simply the thing in our application that a user is consuming. In order for them to consume it, we need to make that resource accessible at an _endpoint_. Again, an endpoint is simply a fancy name for a URL (or URI depending on [which way your door swings](https://danielmiessler.com/study/url_vs_uri/)). 
 
+To do this, we're going to use Iron Router's server side routing feature, and more specifically, the convenient RESTful API given to us by the package. First, let's look at how Iron Router's documentation explains it and then look at how we're going to abstract it into our `API` object pattern.
+
+```javascript
+Router.route('/webhooks/stripe', { where: 'server' })
+  .get(function () {
+    // GET /webhooks/stripe
+  })
+  .post(function () {
+    // POST /webhooks/stripe
+  })
+  .put(function () {
+    // PUT /webhooks/stripe
+  });
+```
+The idea here is that we define a route passing a path, an options object, and then use a series of chained methods each one corresponding to an HTTP verb. WTF?! Let's step through it.
+
+With Iron Router, we start by defining our route with `Router.route( '/server/side/path', { where: 'server' } )`. If you've worked with Iron Router before, the first argument, the path, should look familiar. This is the URL relative to our application's address (e.g. `http://website.com/server/side/path`) that users will use to call on our API. 
+
+This is just like any URL you'd type into your browser, but with one difference: it's not meant to render anything on the page. In other words, this URL is meant to be accessed by a server using an HTTP request. Robot speak. Later on we'll see _how_ this URL is used to make a request. For now: just trust me. 
+
+The next part `{ where: 'server' }` is used to tell Iron Router that this route should only be accessible on the server, but also that this route should get access to Node's `request` and `response` objects (what we'll use to receive a request and respond to it with). 
+
+Lastly, the `.get()`, `.post()`, and `.put()` are convenience methods that point to a function to be called when that route receives a request using _that_ method. So, if an HTTP request is made using the `POST` method, we'll call the `.post()` method. If it's made with a `GET` method, we'll use the `.get()` method, and so on.
+
+#### Using this with our API object
+
+To keep things simple, we want to break this up into two parts. First, we'll store our route definition inside of our `API` object like so:
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  resources: {
+    pizza: Router.route( '/api/v1/pizza', { where: 'server' } )
+  },
+};
+``` 
 
 
 ### Authenticating requests
