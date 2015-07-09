@@ -19,6 +19,14 @@ API = {
       return { error: 401, message: "Invalid API key." };
     }
   },
+  handleRequest: function( context, resource, method ) {
+    var connection = API.connection( context.request );
+    if ( !connection.error ) {
+      API.methods[ resource ][ method ]( context, connection );
+    } else {
+      API.utility.response( context, 401, connection );
+    }
+  },
   methods: {
     pizza: {
       get: function( context, connection ) {
@@ -78,9 +86,14 @@ API = {
           var pizzaId = connection.data._id;
           delete connection.data._id;
 
-          Pizza.update( { "_id": pizzaId }, { $set: connection.data } );
+          var getPizza = Pizza.findOne( { "_id": pizzaId }, { fields: { "_id": 1 } } );
 
-          API.utility.response( context, 200, { "message": "Pizza successfully updated!" } );
+          if ( getPizza ) {
+            Pizza.update( { "_id": pizzaId }, { $set: connection.data } );
+            API.utility.response( context, 200, { "message": "Pizza successfully updated!" } );
+          } else {
+            API.utility.response( context, 404, { "message": "Can't update a non-existent pizza, homeslice." } );
+          }
         } else {
           API.utility.response( context, 403, { error: 403, message: "PUT calls must have a pizza ID and at least a name, crust, or toppings passed in the request body in the correct formats (String, String, Array)." } );
         }
@@ -90,23 +103,23 @@ API = {
             validData = API.utility.validate( connection.data, { "_id": String } );
 
         if ( hasQuery && validData ) {
-          Pizza.remove( { "_id": connection.data._id } );
-          API.utility.response( context, 200, { "message": "Pizza removed!" } );
+          var pizzaId  = connection.data._id;
+          var getPizza = Pizza.findOne( { "_id": pizzaId }, { fields: { "_id": 1 } } );
+
+          if ( getPizza ) {
+            Pizza.remove( { "_id": pizzaId } );
+            API.utility.response( context, 200, { "message": "Pizza removed!" } );
+          } else {
+            API.utility.response( context, 404, { "message": "Can't delete a non-existent pizza, homeslice." } );
+          }
         } else {
           API.utility.response( context, 403, { error: 403, message: "DELETE calls must have an _id (and only an _id) in the request body in the correct format (String)." } );
         }
       }
-    },
-    toppings: {
-      get: function( connection ) {
-        console.log( "GET METHOD:" );
-        console.log( connection );
-      }
     }
   },
   resources: {
-    pizza: Router.route( '/api/v1/pizza', { where: 'server' } ),
-    toppings: Router.route( '/api/v1/toppings', { where: 'server' } )
+    pizza: Router.route( '/api/v1/pizza', { where: 'server' } )
   },
   utility: {
     getRequestContents: function( request ) {
