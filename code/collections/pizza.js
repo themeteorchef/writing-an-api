@@ -1,10 +1,10 @@
-APIKeys = new Meteor.Collection('api-keys');
+Pizza = new Meteor.Collection( 'pizza' );
 
 /*
 * Allow
 */
 
-APIKeys.allow({
+Pizza.allow({
   insert: function(){
     // Disallow inserts on the client by default.
     return false;
@@ -23,7 +23,7 @@ APIKeys.allow({
 * Deny
 */
 
-APIKeys.deny({
+Pizza.deny({
   insert: function(){
     // Deny inserts on the client by default.
     return true;

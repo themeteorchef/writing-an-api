@@ -26,6 +26,13 @@ generateTestAccounts = function(){
       });
 
       Meteor.call( "initApiKey", user );
+
+      // Load our default user up with some pizzas so we have some data
+      // to work with out of the box.
+      for( var i = 0; i < PIZZAS.length; i++ ) {
+        PIZZAS[ i ].owner = user;
+        Pizza.insert( PIZZAS[ i ] );
+      }
     }
   }
 };
