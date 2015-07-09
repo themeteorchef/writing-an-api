@@ -581,6 +581,51 @@ API = {
 
 Last step for our connection! With the response of `utility.getRequestContents()` stored in our `getRequestContents` variable, we create a new object to return to the client. Here, we assign two parameters: `owner`, equal to our user's ID obtained during our authentication step, and `data`, the data we just retrieved from the request. Boom! Let's jump back up to our `handleRequest()` call to see how this all plays out.
 
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  handleRequest: function( context, resource, method ) {
+    var connection = API.connection( context.request );
+    if ( !connection.error ) {
+      API.methods[ resource ][ method ]( context, connection );
+    } else {
+      API.utility.response( context, 401, connection );
+    }
+  }
+};
+```
+
+Okay, back to the top! For now! This should be starting to make some sense. We're taking the result of all that work from our `connection()` method and using it to...do more delegation! Argh! Good god man, are you trying to drive us insane?! No. Not at all.
+
+<!-- ![Ron Burgandy saying I don't believe you](http://media.giphy.com/media/UTm86phGUMMQE/giphy.gif) -->
+
+Okay, okay. Back to Adult Town. Let's look at how we're handling that error we returned earlier if a user's API key was bogus. See that `API.utility.response()` thingamajig? That's our next wormhole. Let's jump in.
+
+#### utility.response()
+
+When we're working with HTTP requests, we need to acknowledge them somehow. Just like our user can send us a _request_, we can send them a _response_. It's easy to repeat a lot of code doing this, so again, we've simplified this into a reusable function so we can flex our geek muscles. Shall we?
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  utility: {
+    response: function( context, statusCode, data ) {
+      context.response.setHeader( 'Content-Type', 'application/json' );
+      context.response.setHeader( 'Access-Control-Allow-Origin', '*' );
+      context.response.statusCode = statusCode;
+      context.response.end( JSON.stringify( data ) );
+    }
+  }
+};
+```
+Enough with the jokes! This isn't a joke, I swear. Instead, this is how we have to respond to an HTTP request. It's actually simpler than it looks.
+
+First, we need to set some `headers` that let our request know two things: what type of content we're sending back to it (`JSON`), and that we're totally cool with it sending us its response. That second part, `Access-Control-Allow-Origin` is a little confusing. This header is a security measure implemented by the CORS (Cross Origin Resource Sharing) specification. In normal people terms, this essentially says from what domains a request can be made. 
+
+By default, requests are only allowed from the same domain, e.g. I can only make a request from `http://tmc-008-demo.meteor.com` _to_ `http://tmc-008-demo.meteor.com`. If, say, I try to to make a request to that address from `http://localhost:3000`, I'd get an error. 
+
 
 
 ### Handling responses
