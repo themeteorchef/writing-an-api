@@ -624,8 +624,11 @@ Enough with the jokes! This isn't a joke, I swear. Instead, this is how we have 
 
 First, we need to set some `headers` that let our request know two things: what type of content we're sending back to it (`JSON`), and that we're totally cool with it sending us its response. That second part, `Access-Control-Allow-Origin` is a little confusing. This header is a security measure implemented by the CORS (Cross Origin Resource Sharing) specification. In normal people terms, this essentially says from what domains a request can be made. 
 
-By default, requests are only allowed from the same domain, e.g. I can only make a request from `http://tmc-008-demo.meteor.com` _to_ `http://tmc-008-demo.meteor.com`. If, say, I try to to make a request to that address from `http://localhost:3000`, I'd get an error. 
+By default, requests are only allowed from the same domain, e.g. I can only make a request from `http://tmc-008-demo.meteor.com` _to_ `http://tmc-008-demo.meteor.com`. If, say, I try to to make a request to that address from `http://localhost:3000`, I'd get an error. This is where `Access-Control-Allow-Origin` comes in. It let's us say who is and isn't allowed to send us requests. Because we want our API accessible to everyone, we can set the value of this header to `*` (an asterisk), meaning "anyone." 
 
+Once that is set, we need to respond with an HTTP status code. Remember, this is the three digit number that servers use to refer to certain events. We're getting this, here, as an argument to our `utility.response()` method. 
+
+YOU'RE EXPLAINING THE DIFFERENT RESPONSE METHODS AND HOW THOSE TIE INTO THE UTILITY.RESPONSE METHOD. Deep breath. 
 
 
 ### Handling responses
