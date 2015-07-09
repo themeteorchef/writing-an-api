@@ -402,11 +402,54 @@ See what's going on? Instead of chaining our method calls like the example from 
 
 <div class="note">
   <h3>API Versioning</h3>
-  <p>You may have noticed that the URL for our endpoints is prefixed with /api/v1. What's that? Just like a piece of software, we want to version our API so that consumers of our API know what functionality they have access to. For example, we might want to change an endpoint's URL but we don't want to break the existing version. What we can do, then, is create a new version of our API, prefixing all new URLs with the new version. Because this is the <em>first</em> iteration of our API, we prefix all of our URLs with /api/v1/.</p>
-<p>This is honestly a bit heady and confusing. I highly recommend checking out <a href="http://www.heavybit.com/library/video/2014-09-30-amber-feng">this talk by Amber Feng from Stripe</a>. In it she discusses some of the design principles behind their API. It's well worth the half hour if you want to start thinking seriously about the design of your API. Food for thought!</p>
+  <p>You may have noticed that the URL for our endpoints is prefixed with /api/v1. What's that? Just like a piece of software, we want to version our API so that consumers of our API know what functionality they have access to.</p> <p>For example, we might want to change an endpoint's URL but we don't want to break the existing version. What we can do, then, is create a new version of our API, prefixing all new URLs with the new version. Because this is the <em>first</em> iteration of our API, we prefix all of our URLs with /api/v1/.</p>
+<p>This is honestly a bit heady and confusing. I highly recommend checking out <a href="http://www.heavybit.com/library/video/2014-09-30-amber-feng">this talk by Amber Feng, the Product Engineering Lead at Stripe</a>. In it she discusses some of the design principles behind their API. It's well worth the half hour watch if you want to start thinking seriously about the design of your API. Food for thought!</p>
 </div>
 
-### Authenticating requests
+### Handling requests
+Okay. We've got our endpoints all ready to go so now we need to start talking about handling requests. Remember, we're going to focus on handling the four most popular types of requests: `GET`, `POST`, `PUT`, and `DELETE`. This is where we're going to put on our engineering cap, so pay close attention. Our goal is to bake all of our functionality into our `API` object in such a way that we can reuse pieces and avoid duplication. Let's dig in!
+
+#### handleRequest
+
+Because all of our requests will need to perform some common tasks that are not specific to the _type_ of request, we want to create a function that acts as a common starting point for _all_ of our requests. We're going to do something a bit funky and show how we're going to _call_ this common function before we actually define it.
+
+<p class="block-header">/server/api/resources/pizza.js</p>
+
+```javascript
+API.resources.pizza.get( function() {
+  API.handleRequest( this, 'pizza', 'get' );
+});
+
+API.resources.pizza.post( function() {
+  API.handleRequest( this, 'pizza', 'post' );
+});
+
+API.resources.pizza.put( function() {
+  API.handleRequest( this, 'pizza', 'put' );
+});
+
+API.resources.pizza.delete( function() {
+  API.handleRequest( this, 'pizza', 'delete' );
+});
+```
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  handleRequest: function( context, resource, method ) {
+    var connection = API.connection( context.request );
+    if ( !connection.error ) {
+      API.methods[ resource ][ method ]( context, connection );
+    } else {
+      API.utility.response( context, 401, connection );
+    }
+  }
+};
+```
+Whaaaaat is this?! Don't panic. Let's step through it. 
+
+#### Authenticating requests
 ### Handling responses
 ### Consuming the API
 ### Wrap Up & Summary
