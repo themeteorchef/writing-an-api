@@ -529,7 +529,59 @@ API = {
   }
 };
 ```
-See how we're assigning the result of `API.authentication()` to the `validUser` variable? This is allowing us to halt the request and return an error if the API key we've received is invalid.
+See how we're assigning the result of `API.authentication()` to the `validUser` variable? This is allowing us to halt the request and return an error if the API key we've received is invalid. Note that here, we're simply returning an object with an `error` parameter containing an HTTP status code and a `message` parameter to explain what went wrong. We'll look at how this is utilized in a bit. Next, let's look at what happens when an API key _is valid_.
+
+<div class="note success">
+   <h3>Take a Break</h3>
+   <p>Woof! This is a lot, I know, but the payoff is worth it. Let's take five and grab a snack.</p>
+</div>
+
+#### utility.getRequestContents
+
+Alright, so. If our API key is valid, we want to retrieve the data from our request. Depending on the type of request we receive, we expect that data to be in one of two places _within_ our `request` object: `query` or `body`. `getRequestContents()` will help us figure all of that out and return the correct data. 
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  utility: {
+    getRequestContents: function( request ) {
+      switch( request.method ) {
+        case "GET":
+          return request.query;
+        case "POST":
+        case "PUT":
+        case "DELETE":
+          return request.body;
+      }
+    }
+  }
+};
+```
+Pretty harmless, right? Here, we take our request and run it through a JavaScript `switch` statement. If our request is of the `GET` type, we want to return the `query` object. If it's a `POST`, `PUT`, or `DELETE`, we want to return the `body` object. Easy peasy. Back up to our connection script one last time to see how we package this up.
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  connection: function( request ) {
+    var apiKey    = request.headers[ 'x-api-key' ],
+        validUser = API.authentication( apiKey );
+
+    if ( validUser ) {
+      var getRequestContents = API.utility.getRequestContents( request ),
+          requestData        = { "owner": validUser, data: getRequestContents };
+      return requestData;
+    } else {
+      return { error: 401, message: "Invalid API key." };
+    }
+  }
+};
+```
+
+Last step for our connection! With the response of `utility.getRequestContents()` stored in our `getRequestContents` variable, we create a new object to return to the client. Here, we assign two parameters: `owner`, equal to our user's ID obtained during our authentication step, and `data`, the data we just retrieved from the request. Boom! Let's jump back up to our `handleRequest()` call to see how this all plays out.
+
+
 
 ### Handling responses
 ### Consuming the API
