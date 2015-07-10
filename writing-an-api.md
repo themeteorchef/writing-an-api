@@ -614,6 +614,7 @@ API = {
     response: function( context, statusCode, data ) {
       context.response.setHeader( 'Content-Type', 'application/json' );
       context.response.setHeader( 'Access-Control-Allow-Origin', '*' );
+      context.response.setHeader( 'Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept' );
       context.response.statusCode = statusCode;
       context.response.end( JSON.stringify( data ) );
     }
@@ -622,15 +623,64 @@ API = {
 ```
 Enough with the jokes! This isn't a joke, I swear. Instead, this is how we have to respond to an HTTP request. It's actually simpler than it looks.
 
-First, we need to set some `headers` that let our request know two things: what type of content we're sending back to it (`JSON`), and that we're totally cool with it sending us its response. That second part, `Access-Control-Allow-Origin` is a little confusing. This header is a security measure implemented by the CORS (Cross Origin Resource Sharing) specification. In normal people terms, this essentially says from what domains a request can be made. 
+First, we need to set some `headers` that let our request know two things: what type of content we're sending back to it (`JSON`), and that we're totally cool with it sending us its request. That second part, `Access-Control-Allow-Origin` is a little confusing. This header is a security measure implemented by the [CORS (Cross Origin Resource Sharing)](https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS) specification. In normal people terms, this essentially says from what domains a request can be made. 
 
 By default, requests are only allowed from the same domain, e.g. I can only make a request from `http://tmc-008-demo.meteor.com` _to_ `http://tmc-008-demo.meteor.com`. If, say, I try to to make a request to that address from `http://localhost:3000`, I'd get an error. This is where `Access-Control-Allow-Origin` comes in. It let's us say who is and isn't allowed to send us requests. Because we want our API accessible to everyone, we can set the value of this header to `*` (an asterisk), meaning "anyone." 
 
-Once that is set, we need to respond with an HTTP status code. Remember, this is the three digit number that servers use to refer to certain events. We're getting this, here, as an argument to our `utility.response()` method. 
+Once that is set, we need to respond with an HTTP status code. Remember, this is the three digit number that servers use to refer to certain events. We're getting this, here, as an argument to our `utility.response()` method. When we set this, we're telling the requesting server the result of their request.
 
-YOU'RE EXPLAINING THE DIFFERENT RESPONSE METHODS AND HOW THOSE TIE INTO THE UTILITY.RESPONSE METHOD. Deep breath. 
+_Finally_, we're ending our response to the request, passing our data. Here, we use `JSON.stringify()` because...
 
+<blockquote>
+   <p>The JSON.stringify() method converts a JavaScript value to a JSON string</p>
+   <cite>&mdash; <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify">Mozilla Developer Network</a></cite>
+</blockquote>
+
+This means that we can safely transmit our data in our response as `JSON` data. Note: we're doing this because our request is expecting `JSON` data to be returned. Why? Because that's what we told it that's what we're responding with a few lines earlier when we set `context.response.setHeader( 'Content-Type', 'application/json' )`! 
+
+That's it for our `utility.response()` method. Let's jump back up and take a look at how we're (finally) handling the response.
+
+<div class="note danger">
+  <h3>Access Control Etc.</h3>
+  <p>The bulk of this CORS stuff is pretty confusing. It <em>does</em> server a purpose (security) and from experimenting what we've covered here should be sufficient. Depending on what your API is doing, I'd recommend doing a little research to make sure you've covered all of your bases (read: take this with a grain of salt, it's not perfect).</p>
+</div>
 
 ### Handling responses
+
+Okay, this is where the rubber meets the road. When we say "handling responses" what we really mean is fulfilling a request. At this point, we've authenticated our users access to our API and grabbed the data they've lobbed over to us. Now, we want to take a look at what _resource_ the request wants to work with and what _method_ it wants to use. Back in our `handleRequest` method, let's look at how we're making this work...
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  handleRequest: function( context, resource, method ) {
+    var connection = API.connection( context.request );
+    if ( !connection.error ) {
+      API.methods[ resource ][ method ]( context, connection );
+    } else {
+      API.utility.response( context, 401, connection );
+    }
+  }
+};
+```
+
+See that `API.methods[ resource ][ method ]( context, connection );` part? This is taking the resource and method passed to `handleRequest` and pointing it to the corresponding method inside of our `API` object. Notice that, too, we're sending along the context (`this` from our request) and the connection information we've received (the userId associated with the API key we received and the data we pulled out of their request). Let's jump into our `API` object and see how our methods are organized and then step through each to see what they do.
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  methods: {
+    pizza: {
+      get: function( context, connection ) {},
+      post: function( context, connection ) {},
+      put: function( context, connection ) {},
+      delete: function( context, connection ) {}
+    }
+  },
+};
+```
+See the mapping here? In our `handleRequest` method, we were doing `API.methods[ resource ][ method ]( context, connection )` which is like saying `API.methods.pizza.get( context, connection );` We use bracket notation to allow for variable object/method names. If we had another resource called `tacos` and we wanted to call its `put` method, we'd get something like `API.methods.tacos.put( context, connection );`. Make sense?
+
 ### Consuming the API
 ### Wrap Up & Summary
