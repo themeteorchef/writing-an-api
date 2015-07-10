@@ -906,6 +906,42 @@ Boom! Last one. Let's do this `DELETE` thing.
 
 #### DELETE Methods
 
+I bet you can guess what a `DELETE` request does? Yup! It deletes something. _Mind blow_. Enough sarcasm, let's check it out.
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  methods: {
+    pizza: {
+      delete: function( context, connection ) {
+        var hasQuery  = API.utility.hasData( connection.data ),
+            validData = API.utility.validate( connection.data, { "_id": String } );
+
+        if ( hasQuery && validData ) {
+          var pizzaId  = connection.data._id;
+          var getPizza = Pizza.findOne( { "_id": pizzaId }, { fields: { "_id": 1 } } );
+
+          if ( getPizza ) {
+            Pizza.remove( { "_id": pizzaId } );
+            API.utility.response( context, 200, { "message": "Pizza removed!" } );
+          } else {
+            API.utility.response( context, 404, { "message": "Can't delete a non-existent pizza, homeslice." } );
+          }
+        } else {
+          API.utility.response( context, 403, { error: 403, message: "DELETE calls must have an _id (and only an _id) in the request body in the correct format (String)." } );
+        }
+      }
+    }
+  },
+};
+```
+Almost _too_ simple, yeah? Our usual suspects `hasData` and `validate` take care of business. We use the same test from our `PUT` method to make sure the document we're trying to delete actually exists and if it does: BLAMMO! If either of our tests fail, we throw a `404` or `403` depending on the case.
+
+<div class="note success">
+<h3>Take a bow! <i class="fa fa-thumbs-up"></i></h3>
+<p>You just wrote an API, friend! It's simple, but it actually handles all of the basic HTTP methods. We can retrieve, create, update, and delete pizzas. Even the Jetsons didn't have it on lockdown like this.</p> 
+</div>
 
 
 ### Consuming the API
