@@ -1,18 +1,3 @@
-What is our API?
-
-```bash
-/api/v1/pizza
-```
-
-1. Get a pizza by: name, topping, sauce, or crust.
-2. Create a new pizza with: name, toppings, sauce, and crust.
-3. Update a pizza with: name, toppings, sauce, or crust.
-4. Delete a pizza.
-
-GET
-- With query params = specific pizza.
-- Without query params = all pizzas.
-
 ### Getting Started
 For this recipe, we're going to need to make sure we have access to the following packages. These will help us with creating our actual API but also securing data and authenticating requests _to_ that API.
 
@@ -55,7 +40,7 @@ There are a handful of terms that will be used throughout this recipe that would
 #### API
 When it comes to software development, `API`—or, Application Programming Interface—is generally acknowledged as the methods, functions, or data that an application exposes for other software to use. This makes it possible for applications to work together without requiring direct collaboration between any two development teams. 
 
-In the context of this recipe, API will refer to the URLs that developers can use to retrieve, create, update, and delete data in our application.
+In the context of this recipe, `API` will refer to the data and functions developers can access in our application via URLs or endpoints.
 
 #### Endpoint
 An `endpoint` is the URL that developers use to gain access to data or functionality in our application. For example, `http://website.com/api/v1/pizzas/toppings.json` is an endpoint that will return data, while `http://website.com/api/v1/pizzas/update` is an endpoint that can access functionality to update a pizza. If this is confusing, don't worry, it will make sense when we implement our own API later on.
@@ -70,10 +55,10 @@ A `request` is the term used to refer to the action performed by another applica
 A `response` is the term used to refer to our application responding to the request of another application. Depending on the type of request made by the other application our response will contain a status code—a three digit number that lets the other application know whether their request succeeded—and/or the data they requested, or a message confirming their action.
 
 #### HTTP Verbs
-HTTP verbs are the different types of requests that a user can make on our API. The four types/verbs we'll focus on in this recipe are `GET`, `POST`, `PUT`, and `DELETE`. Each verb corresponds to a different type of action that our API can use to delegate the user's request to the right data or functionality that our API exposes.
+HTTP verbs—or methods—are the different types of requests that a user can make on our API. The four types/verbs we'll focus on in this recipe are `GET`, `POST`, `PUT`, and `DELETE`. Each verb corresponds to a different type of action that our API can use to delegate the user's request to the right data or functionality that our API exposes.
 
 #### HTTP Status Code
-An `HTTP Status Code` is a three-digit number that an application use to describe the result of a certain request. For example, if an action was successful an application might respond with `200` or `OK`. If a user made a request for some data that could not be found, an application would respond with `404` or `Not Found`. There are [several HTTP Status Codes](http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html) that applications can use to communicate the results of actions with one another.
+An `HTTP Status Code` is a three-digit number that an application can use to describe the result of a certain request. For example, if an action was successful an application might respond with `200` or `OK`. If a user made a request for some data that could not be found, an application would respond with `404` or `Not Found`. There are [several HTTP Status Codes](http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html) that applications can use to communicate the results of actions with one another.
  
 #### API Key
 An `API Key` is a unique identifier used by an API to _authenticate_ requests from users. It's generally presented in the form of a long, hexadecimal string (usually 32 characters or more). API Keys are randomly generated and can be issued (generated) or revoked (made invalid).
@@ -86,15 +71,15 @@ To make our work a little easier to understand, we'll be creating an API that al
 - Update an existing pizza in our database with a name, topping(s), or crust.
 - Delete an existing pizza in our database.
 
-To get us started off on the right foot, we're going to begin by focusing on issuing and revoking API tokens for our users. This will ensure that we're thinking about security from the start and not tacking it on later.
+Pizza! To get us started off on the right foot, we're going to begin by focusing on issuing and revoking API tokens for our users. This will ensure that we're thinking about security from the start and not tacking it on later.
 
-### Issuing API tokens
+### Issuing API keys
 
 In order for users to access our API, we need some sort of authentication. When users login to our application's graphical interface, they just use a username and password. When they access our API, though, we'd like to use something that's a little more secure.
 
 An API key allows us to accomplish this because of a few properties:
 
-1. It's a long, difficult to guess (unlike a password) string of characters.
+1. It's a long, difficult to guess (unlike, potentially, a password) string of characters.
 2. It can be used to reference a user's account ID without compromising their username and password.
 3. It can be reset, meaning if a security breach _does_ occur, a user can invalidate an API key making it useless to anyone who uses it.
 
@@ -132,7 +117,12 @@ Super simple, right? We start by using `check()` to verify that our `userId` is 
 
 Next, we `try` to insert a new key for our user into the `APIKeys` collection. Wait a minute! Where did this come from?! This collection was [setup beforehand](https://github.com/themeteorchef/writing-an-api/blob/master/code/collections/api-keys.js), but let's talk about _why_ we have a separate collection to begin with. The reason we want to separate our API key storage from the more predictable location of our user's `profile` (the writable portion of a user's record in the `Meteor.users()` collection) is that [by default, the `profile` object is _writable_](http://joshowens.me/the-curious-case-of-the-unknowing-leaky-meteor-security/). 
 
-This means that without any extra considerations, were we to store our user's API key in their profile, if our user documents were published to the client, _anyone_ with our user's ID could update the key. Even though the code for this recipe has [already taken this into consideration](https://github.com/themeteorchef/base/blob/master/collections/users.js), it's still good to separate concerns a bit. Keep in mind, **this isn't bulletproof** and it's still recommended that your users practice good security by keeping their information safe from unwanted hands.
+This means that without any extra considerations, were we to store our user's API key in their profile, _anyone_ with our user's ID could update the key (if our user documents were published to the client). Even though the code for this recipe has [already taken this into consideration](https://github.com/themeteorchef/base/blob/master/collections/users.js), it's still good to separate concerns a bit. Keep in mind, **this isn't bulletproof** and it's still recommended that your users practice good security by keeping their information safe from unwanted hands.
+
+<div class="info note">
+  <h3>Educating in the UI <i class="fa fa-info"></i></h3>
+  <p>Because practicing good security is important, a good practice is educating users in your UI. Wherever they interact with their API key, make suggestions about how best to store and protect their key from unwanted eyes.</p>
+</div>
 
 #### Baking this into the signup flow
 
@@ -152,7 +142,7 @@ Accounts.createUser({email: user.email, password: user.password}, function( erro
 });
 ```
 
-See the call? The last line in our `Accounts.createUser()` callback. We simply call our  `initApiKey` method _after_ our user's account has been created (and they've been logged in—why we're using the call to `Meteor.userId()`), passing the user's ID so we can pair a key to the user. Nice and simple! Now that we have this in place, let's take a look at how we display the key back to our user so they can use it in their HTTP requests as well as regenerate it.
+See the call? The last line in our `Accounts.createUser()` callback. We simply call our  `initApiKey` method _after_ our user's account has been created (and they've been logged in—why we're using the call to `Meteor.userId()`). We're passing the user's ID to our method so we can pair the API key we generate to the user. Nice and simple! Now that we have this in place, let's take a look at how we display the key back to our user so they can use it in their HTTP requests as well as regenerate it.
 
 #### Key display and regeneration
 
@@ -217,7 +207,7 @@ Template.apiKey.helpers({
   }
 });
 ```
-Straightforward enough. We simply do a `findOne()` and return the response (if it exists) to our `{{apiKey}}` helper. But wait...how are we doing this without a query or projections? Well, because know that our publication is going to return only the document that matches our current user's ID _and_ only the `key` field, we can do a `findOne` because our template will only ever see _one document_. Make sense? No sense in writing extra code when the job is already finished! Now that getting our key into the template is square, let's check out regeneration.
+Straightforward enough. We simply do a `findOne()` and return the response (if it exists) to our `{{apiKey}}` helper. But wait...how are we doing this without a query or projections? Well, because we know that our publication is going to return only the document that matches our current user's ID _and_ only the `key` field, we can do a `findOne` because our template will only ever see _one document_. Make sense? No sense in writing extra code when the job is already finished! Now that getting our key into the template is square, let's check out regeneration.
 
 <p class="block-header">/client/controllers/authenticated/api-key.js</p>
 
@@ -241,7 +231,7 @@ Template.apiKey.events({
 ```
 Two steps here. Because the regeneration action is _destructive_ meaning once this button is pushed the current API key is completely overwritten, we need to ask the user if they're sure. So, who cares? Well, as we'll learn in a bit, only the currently set API key is active. Again, this is a security measure so that if a key is leaked, our user can generate a new one effectively invalidating the old one. This means that if someone were to try and make an HTTP request on our API using that old key, they'd get an error! We are _so considerate_ of our users. 
 
-<!-- ![David Mitchell pointing](http://media.giphy.com/media/n988gduPMFC8w/giphy.gif) -->
+![David Mitchell pointing](http://media.giphy.com/media/n988gduPMFC8w/giphy.gif)
 
 Alright! Let's hop over to the server and take a look at how this is working.
 
@@ -270,11 +260,11 @@ Meteor.methods({
 
 Almost identical to our `initApiKey` method from our signup flow, but with one small difference. Because we want to update an existing API key, we first want to look up the key in the database by the user's ID and _then_ set the key. Cool! With this in place, our user can click and confirm the regeneration on the client and get a fresh key in the input field we set up. Party!
 
-Things are lookin great! We're ready to rock on implementing our actual API. We'll start by setting up the structure of our API so working on it is a little easier.
+Things are looking great! We're ready to rock on implementing our actual API. We'll start by setting up the structure of our API so working on it is a little easier.
 
 ### Setting up our API
 
-_How_ we structure our API is just as important the functionality that API provides. Technically speaking, our API is just another interface into our application, albeit not visual. Just like a graphical interface, though, we need to be considerate of how our API is organized because:
+_How_ we structure our API is just as important as the functionality that API provides. Technically speaking, our API is just another interface into our application, albeit not visual. Just like a graphical interface, though, we need to be considerate of how our API is organized because:
 
 1. It makes it easier for our users to interact with.
 2. It makes it easier for _us_ to maintain and expand.
@@ -324,7 +314,7 @@ API = {
 ```
 Wow! This is a lot. Don't worry, we'll step through each piece so it makes sense. All we want to point out here is that we're consolidating everything in our API into one place. Again, this is just an organizational technique to slim down our code and make it easier to reason about what functionality we have access to. As we build out each of the objects and functions inside of our `API` object, you will start to see why this structure is convenient.
 
-Let's get started by adding our resources.
+Let's get started by defining our resources.
 
 ### Defining our resources
 
@@ -344,15 +334,15 @@ Router.route('/webhooks/stripe', { where: 'server' })
     // PUT /webhooks/stripe
   });
 ```
-The idea here is that we define a route passing a path, an options object, and then use a series of chained methods each one corresponding to an HTTP verb. WTF?! Let's step through it.
+The idea here is that we define a route passing a path, an options object, and then use a series of chained methods, each one corresponding to an HTTP verb. WTF?! Let's step through it.
 
 With Iron Router, we start by defining our route with `Router.route( '/server/side/path', { where: 'server' } )`. If you've worked with Iron Router before, the first argument, the path, should look familiar. This is the URL relative to our application's address (e.g. `http://website.com/server/side/path`) that users will use to call on our API. 
 
 This is just like any URL you'd type into your browser, but with one difference: it's not meant to render anything on the page. In other words, this URL is meant to be accessed by a server using an HTTP request. Robot speak. Later on we'll see _how_ this URL is used to make a request. For now: just trust me. 
 
-The next part `{ where: 'server' }` is used to tell Iron Router that this route should only be accessible on the server, but also that this route should get access to Node's `request` and `response` objects (what we'll use to receive a request and respond to it with). 
+The next part `{ where: 'server' }` is used to tell Iron Router that this route should be accessible on the server, but also that this route should get access to Node's `request` and `response` objects (what we'll use to receive a request and respond to it with). 
 
-Lastly, the `.get()`, `.post()`, and `.put()` are convenience methods that point to a function to be called when that route receives a request using _that_ method. So, if an HTTP request is made using the `POST` method, we'll call the `.post()` method. If it's made with a `GET` method, we'll use the `.get()` method, and so on.
+Lastly, the `.get()`, `.post()`, and `.put()` are convenience methods that point to a function to be called when that route receives a request using _that_ method. So, if an HTTP request is made using the `POST` method, we'll call the `.post()` function. If it's made with a `GET` method, we'll use the `.get()` function, and so on.
 
 #### Using this with our API object
 
@@ -370,7 +360,7 @@ API = {
 Notice that here, we're pulling in everything _before_ each of the methods corresponding to verbs. This allows us to keep all of our resource definitions together and easily update URLs. 
 
 <div class="note">
-  <h3>Organization Style</h3>
+  <h3>Organization Style <i class="fa fa-warning"></i></h3>
   <p>You don't have to split your definitions like this. I'm doing this here to consolidate things for the sake of organization. Defining your resources like it's shown in the Iron Router documentation will not break anything in this recipe.
 </div> 
 
@@ -398,12 +388,12 @@ API.resources.pizza.delete( function() {
 
 See what's going on? Instead of chaining our method calls like the example from Iron Router, here, we break each one up, tethering it back to our route definition in our API object. The reason we're placing this in a separate file is for the sake of clarity. Our example here only has one resource, but a real API could have several. Breaking each resource into its own file can help you better understand what calls are related to what resource. No spaghetti!
 
-<!--![Exploding spaghetti](http://media.giphy.com/media/BGogoDla5iydi/giphy.gif) -->
+![Exploding spaghetti](http://media.giphy.com/media/BGogoDla5iydi/giphy.gif)
 
 <div class="note">
-  <h3>API Versioning</h3>
-  <p>You may have noticed that the URL for our endpoints is prefixed with /api/v1. What's that? Just like a piece of software, we want to version our API so that consumers of our API know what functionality they have access to.</p> <p>For example, we might want to change an endpoint's URL but we don't want to break the existing version. What we can do, then, is create a new version of our API, prefixing all new URLs with the new version. Because this is the <em>first</em> iteration of our API, we prefix all of our URLs with /api/v1/.</p>
-<p>This is honestly a bit heady and confusing. I highly recommend checking out <a href="http://www.heavybit.com/library/video/2014-09-30-amber-feng">this talk by Amber Feng, the Product Engineering Lead at Stripe</a>. In it she discusses some of the design principles behind their API. It's well worth the half hour watch if you want to start thinking seriously about the design of your API. Food for thought!</p>
+  <h3>API Versioning <i class="fa fa-warning"></i></h3>
+  <p>You may have noticed that the URL for our endpoints is prefixed with /api/v1. What's that? Just like a piece of software, we want to version our API so that consumers of our API know what functionality they have access to with each iteration.</p> <p>For example, we might want to change an endpoint's URL but we don't want to break the existing version. What we can do, then, is create a new version of our API, prefixing all new URLs with the new version. Because this is the <em>first</em> iteration of our API, we prefix all of our URLs with /api/v1/. In the future, we'll keep all of our /api/v1/ urls accessible, while still allowing us to expand our API by changing out the version number.</p>
+<p>This is honestly a bit heady and confusing at first. I highly recommend checking out <a href="http://www.heavybit.com/library/video/2014-09-30-amber-feng">this talk by Amber Feng, the Product Engineering Lead at Stripe</a>. In it she discusses some of the design principles behind their API. It's well worth the half hour watch if you want to start thinking seriously about the design of your API. Food for thought!</p>
 </div>
 
 ### Handling requests
@@ -477,7 +467,11 @@ API = {
 
 Hang in there. This first step, `connection` is responsible for pulling apart our request to get some information. First, we need to get our user's API key. In order to authenticate each of their requests, we ask that our users pass their API key as part of the HTTP request's `headers`. What are those?
 
-> HTTP header fields are components of the header section of request and response messages in the Hypertext Transfer Protocol (HTTP). They define the operating parameters of an HTTP transaction.
+<blockquote>
+  <p>HTTP header fields are components of the header section of request and response messages in the Hypertext Transfer Protocol (HTTP). They define the operating parameters of an HTTP transaction.
+</p>
+  <cite>&mdash; <a href="https://en.wikipedia.org/wiki/List_of_HTTP_header_fields">List of HTTP header fields on Wikipedia</a></cite>
+</blockquote>
 
 We'll see how our user sets these later. For now, just know that we ask our users to store their API key in the `headers` object as a parameter labeled `x-api-key`. To make this a little clearer, here is how this is structured:
 
@@ -532,7 +526,7 @@ API = {
 See how we're assigning the result of `API.authentication()` to the `validUser` variable? This is allowing us to halt the request and return an error if the API key we've received is invalid. Note that here, we're simply returning an object with an `error` parameter containing an HTTP status code and a `message` parameter to explain what went wrong. We'll look at how this is utilized in a bit. Next, let's look at what happens when an API key _is valid_.
 
 <div class="note success">
-   <h3>Take a Break</h3>
+   <h3>Take a Break <i class="fa fa-thumbs-up"></i></h3>
    <p>Woof! This is a lot, I know, but the payoff is worth it. Let's take five and grab a snack.</p>
 </div>
 
@@ -558,7 +552,7 @@ API = {
   }
 };
 ```
-Pretty harmless, right? Here, we take our request and run it through a JavaScript `switch` statement. If our request is of the `GET` type, we want to return the `query` object. If it's a `POST`, `PUT`, or `DELETE`, we want to return the `body` object. Easy peasy. Back up to our connection script one last time to see how we package this up.
+Pretty harmless, right? Here, we take our request and run it through a JavaScript `switch` statement. If our request is of the `GET` type, we want to return the `query` object. If it's a `POST`, `PUT`, or `DELETE`, we want to return the `body` object. If you're unfamiliar with it, the reason we're "stacking" the last three types is to use a concept known as "fallthrough" which is like saying `POST || PUT || DELETE`. Easy peasy. Back up to our connection script one last time to see how we package this up.
 
 <p class="block-header">/server/api/config/api.js</p>
 
@@ -598,7 +592,7 @@ API = {
 
 Okay, back to the top! For now! This should be starting to make some sense. We're taking the result of all that work from our `connection()` method and using it to...do more delegation! Argh! Good god man, are you trying to drive us insane?! No. Not at all.
 
-<!-- ![Ron Burgandy saying I don't believe you](http://media.giphy.com/media/UTm86phGUMMQE/giphy.gif) -->
+![Ron Burgandy saying I don't believe you](http://media.giphy.com/media/UTm86phGUMMQE/giphy.gif)
 
 Okay, okay. Back to Adult Town. Let's look at how we're handling that error we returned earlier if a user's API key was bogus. See that `API.utility.response()` thingamajig? That's our next wormhole. Let's jump in.
 
@@ -614,7 +608,6 @@ API = {
     response: function( context, statusCode, data ) {
       context.response.setHeader( 'Content-Type', 'application/json' );
       context.response.setHeader( 'Access-Control-Allow-Origin', '*' );
-      context.response.setHeader( 'Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept' );
       context.response.statusCode = statusCode;
       context.response.end( JSON.stringify( data ) );
     }
@@ -632,17 +625,17 @@ Once that is set, we need to respond with an HTTP status code. Remember, this is
 _Finally_, we're ending our response to the request, passing our data. Here, we use `JSON.stringify()` because...
 
 <blockquote>
-   <p>The JSON.stringify() method converts a JavaScript value to a JSON string</p>
+   <p>The JSON.stringify() method converts a JavaScript value to a JSON string.</p>
    <cite>&mdash; <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify">Mozilla Developer Network</a></cite>
 </blockquote>
 
-This means that we can safely transmit our data in our response as `JSON` data. Note: we're doing this because our request is expecting `JSON` data to be returned. Why? Because that's what we told it that's what we're responding with a few lines earlier when we set `context.response.setHeader( 'Content-Type', 'application/json' )`! 
+This means that we can safely transmit our data in our response as `JSON` data. Note: we're doing this because our request is expecting `JSON` data to be returned. Why? Because that's what we told it we're responding with a few lines earlier when we set `context.response.setHeader( 'Content-Type', 'application/json' )`! 
 
 That's it for our `utility.response()` method. Let's jump back up and take a look at how we're (finally) handling the response.
 
 <div class="note danger">
-  <h3>Access Control Etc.</h3>
-  <p>The bulk of this CORS stuff is pretty confusing. It <em>does</em> server a purpose (security) and from experimenting what we've covered here should be sufficient. Depending on what your API is doing, I'd recommend doing a little research to make sure you've covered all of your bases (read: take this with a grain of salt, it's not perfect).</p>
+  <h3>Access Control Etc. <i class="fa fa-frown-o"></i></h3>
+  <p>The bulk of this CORS stuff is pretty confusing. It <em>does</em> server a purpose (security) and from experimenting, what we've covered here should be sufficient. Depending on what your API is doing, I'd recommend doing a little research to make sure you've covered all of your bases (read: take this with a grain of salt, it's not perfect).</p>
 </div>
 
 ### Handling responses
@@ -900,7 +893,7 @@ API = {
 ```
 Woah! This isn't as scary as it looks. At this point we're not introducing anything new, just pushing the limits of what we already have. The first thing to point out is our validation, what is that thing? Well. Because a `PUT` request is all about updating existing objects, we may not always be updating using a `1:1` representation of the existing object (read: same fields each time). To compensate, we need to pass all of the different variations of objects we might get from our user. Seriously?! If we want to be on top of our game, yes. Here, we've simply considered each possible permutation of the object we could receive from our users. 
 
-Again, once we have verified that our data exists and is valid, we go to perform the update. First, though, we verify that the document we're trying to update actually exists. If it does, we carry on, it if it doesn't we send back an error letting the user know we can't update something that doesn't exist. Just like our `POST` request, if there's no data or it's invalid, we throw a `403` error letting them no to straighten up their act.
+Again, once we have verified that our data exists and is valid, we go to perform the update. First, though, we verify that the document we're trying to update actually exists. If it does, we carry on, if it doesn't we send back an error letting the user know we can't update something that doesn't exist. Just like our `POST` request, if there's no data or it's invalid, we throw a `403` error letting them know to straighten up their act.
 
 Boom! Last one. Let's do this `DELETE` thing.
 
@@ -948,7 +941,9 @@ Almost _too_ simple, yeah? Our usual suspects `hasData` and `validate` take care
 
 Before we part ways, it would be helpful to understand how this API is actually _consumed_ by a user. When we say consumed, we really just mean "used." Like, "I'm so hungry, I'm going to use this burger right now." In order to test our methods out, we can make use of the `http` package. We're not going to do too deep of a dive here. Instead, let's just look at examples of each method, showing how the data can be passed.
 
-`GET` request using the HTTP package will need to pass data using either the `params` object that sits inside of the options object, or, as a string in the `query` parameter formatted like `keyName=value&anotherKey=anotherValue`. That last one, `query`, would be parsed on our server as:
+#### GET request
+
+`GET` requests using the HTTP package will need to pass data using either the `params` object that sits inside of the options object, or, as a string in the `query` parameter formatted like `keyName=value&anotherKey=anotherValue`. That last one, `query`, would be parsed on our server as:
 
 ```javascript
 {
@@ -978,6 +973,8 @@ HTTP.get( "http://localhost:3000/api/v1/pizza", {
 });
 ```
 
+#### POST request
+
 The `POST` method call is pretty simple. We just pass our data to the `data` object.
 
 <p class="block-header">POST Method</p>
@@ -1000,6 +997,8 @@ HTTP.post( "http://localhost:3000/api/v1/pizza", {
   }
 });
 ```
+
+#### PUT request
 
 `PUT` is the same, but it can include any of our parameters `name`, `crust`, or `toppings`, but _requires_ an `_id` parameter so we know what pizza to update.
 
@@ -1024,6 +1023,8 @@ HTTP.put( "http://localhost:3000/api/v1/pizza", {
   }
 });
 ```
+
+#### DELETE request
 
 `DELETE` is the most straightforward. We just need a single `_id` parameter to know which pizza to delete.
 
