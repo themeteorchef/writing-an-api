@@ -682,5 +682,231 @@ API = {
 ```
 See the mapping here? In our `handleRequest` method, we were doing `API.methods[ resource ][ method ]( context, connection )` which is like saying `API.methods.pizza.get( context, connection );` We use bracket notation to allow for variable object/method names. If we had another resource called `tacos` and we wanted to call its `put` method, we'd get something like `API.methods.tacos.put( context, connection );`. Make sense?
 
+Because our resource `pizza` supports `GET`, `POST`, `PUT`, and `DELETE` methods, we've defined a function for each HTTP method that will be called when we receive that type of request. Handy! Now for the fun part: making our methods do something. 
+
+#### GET Methods
+
+`GET` methods are used to retrieve data. They're best thought of as performing a search on another application. We're saying "hey, application, can you give me the pizza that matches the following parameters?" Cool, huh? Let's take a look at the method we've defined in our `API` object at `API.resources.pizza.get` to see how this all works.
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  methods: {
+    pizza: {
+      get: function( context, connection ) {
+        var hasQuery = API.utility.hasData( connection.data );
+
+        if ( hasQuery ) {
+          connection.data.owner = connection.owner;
+          var getPizzas = Pizza.find( connection.data ).fetch();
+
+          if ( getPizzas.length > 0 ) {
+            API.utility.response( context, 200, getPizzas );
+          } else {
+            API.utility.response( context, 404, { error: 404, message: "No pizzas found, dude." } );
+          }
+        } else {
+          var getPizzas = Pizza.find( { "owner": connection.owner } ).fetch();
+          API.utility.response( context, 200, getPizzas );
+        }
+      }
+    }
+  },
+};
+```
+
+Some new stuff, some familiar stuff. Let's step through it. First, we introduce a new utility method `hasData`. This method is designed to help us figure out whether or not our user's request has any data associated with it. Why do we care? Well, we need to know what type of response to give. In a `GET` request, we have two outcomes: returning a specific piece of data, or, returning a collection of data.
+
+The difference here is that if our user has passed some parameters (a.k.a query parameters) with their `GET` request, we know that we want to look for a specific document (or subset of documents) that matches that query. If they _don't_ give us any parameters, we just want to return everything. There's one catch! Remember how our `authentication` method earlier gave us back the user ID? We want to use that here so that we're only getting the documents "owned" by _that user_. 
+
+Before we get too far ahead of ourselves, let's pull apart that `hasData` method.
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  utility: {
+    hasData: function( data ) {
+      return Object.keys( data ).length > 0 ? true : false;
+    }
+};
+```
+Easy peasy! But super important. What we're doing here is taking the `data` parameter from our connection object (remember, this is where we stored the data we pulled from the request) and checking whether or not it has any keys (parameters). If it _does_ we return true. If not, we slap a `false` on it. Good? Clear? Kosher? Back up!
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  methods: {
+    pizza: {
+      get: function( context, connection ) {
+        var hasQuery = API.utility.hasData( connection.data );
+
+        if ( hasQuery ) {
+          connection.data.owner = connection.owner;
+          var getPizzas = Pizza.find( connection.data ).fetch();
+
+          if ( getPizzas.length > 0 ) {
+            API.utility.response( context, 200, getPizzas );
+          } else {
+            API.utility.response( context, 404, { error: 404, message: "No pizzas found, dude." } );
+          }
+        } else {
+          var getPizzas = Pizza.find( { "owner": connection.owner } ).fetch();
+          API.utility.response( context, 200, getPizzas );
+        }
+      }
+    }
+  },
+};
+```
+
+See how we're playing this fiddle? If we _do_ have data, we run a `find` on our `Pizza` collection. Next, we `fetch()` the result of that query (turn it into an array) and then evaluate whether or not it has any items (meaning it found something). If it _did_, we use our handy dandy `response` method we setup earlier to return a `200` (success) status code and then pass our found array of pizzas. Recall that from here, our `response` method will convert that array of objects into a JSON string using `JSON.stringify`. 
+
+Sing it with me, kids: R-E-U-S-A-B-I-L-I-T-Y.
+
+Conversely, here, we also account for us finding _no_ pizzas matching the query. If we get bupkis, we return a 404 (not found) along with a message to let the requester know their query turned up with nothing.
+
+Just a ways down, we also handle what happens when we don't have any query parameters. See it? Instead of passing those parameters to our `find`, we instead just pass the `owner` (user ID). What happens here? Well, if there are _any_ pizzas in the `Pizza` collection where the owner is equal to our user's ID, we'll get them back! All of them! Pizza!
+
+<div class="note success">
+  <h3>A working API <i class="fa fa-thumbs-up"></i></h3>
+  <p>It may not seem like much, but with this method written we have a WORKING API. HOLY COW. Give yourself a pat on the back, this is huge!</p>
+</div> 
+
+Okay, ready to keep swinging? Next up is handling `POST` methods. The good news? We're going to reuse a lot of code from here on out so the next three methods will go quick.
+
+#### POST Methods
+
+`POST` methods are used to insert or _create_ data. Let's take a look.
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  methods: {
+    pizza: {
+      post: function( context, connection ) {
+        var hasData   = API.utility.hasData( connection.data ),
+            validData = API.utility.validate( connection.data, { "name": String, "crust": String, "toppings": [ String ] });
+
+        if ( hasData && validData ) {
+          connection.data.owner = connection.owner;
+          var pizza = Pizza.insert( connection.data );
+          API.utility.response( context, 200, { "_id": pizza, "message": "Pizza successfully created!" } );
+        } else {
+          API.utility.response( context, 403, { error: 403, message: "POST calls must have a name, crust, and toppings passed in the request body in the correct formats." } );
+        }
+      },
+    }
+  },
+};
+```
+
+This should be starting to make a lot of sense! A few things to call out. First, we've added _yet another method_. I know, I know.
+
+![Neil DeGrasse Tyson...whatever](http://media.giphy.com/media/zGZOcFgBDrrBC/giphy.gif)
+
+This one is actually really cool! Can you guess what this is doing? `API.utility.validate( connection.data, { "name": String, "crust": String, "toppings": [ String ] });` Let's jump over and take a look.
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  utility: {
+    validate: function( data, pattern ) {
+      return Match.test( data, pattern );
+    }
+  }
+};
+```
+Okay, pretty simple...but what is this? Remember our friend the `check()` method? This is its little brother (or sister—we don't discriminate here). When we use `check()` remember that it takes a piece of data and then a pattern to test against. If the passed data doesn't match the pattern, `check()` throws an error. 
+
+`Match.test()` is almost identical, with one little difference. Instead of throwing an error (halting any operations on the server), it just returns `true` or `false`. Because we're presumably handling lots of request, we don't want to use `check()` because it could break the API for everyone else. Using `Match.test()` lets us handle each validation and response _to_ that validation independently.
+
+If you're following along, we're making this reusable to keep everything tidy. Here we pass our data and the pattern we'd like to validate against. Cool! Let's see how make use of the `true`/`false` answer.
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  methods: {
+    pizza: {
+      post: function( context, connection ) {
+        var hasData   = API.utility.hasData( connection.data ),
+            validData = API.utility.validate( connection.data, { "name": String, "crust": String, "toppings": [ String ] });
+
+        if ( hasData && validData ) {
+          connection.data.owner = connection.owner;
+          var pizza = Pizza.insert( connection.data );
+          API.utility.response( context, 200, { "_id": pizza, "message": "Pizza successfully created!" } );
+        } else {
+          API.utility.response( context, 403, { error: 403, message: "POST calls must have a name, crust, and toppings passed in the request body in the correct formats." } );
+        }
+      },
+    }
+  },
+};
+```
+
+So. Notice that what we're saying in our validation pattern is that in a `POST` request, we expect the data to have a `name` parameter with a type of `String`, a `crust` parameter with a type of `String`, and a `toppings` parameter with a type of `Array` that contains `String`s. We partner the response from this up with our `hasData` method from earlier. Combined, they let us know if we have data to actually _insert_ into the database and if that data is valid.
+
+If it is, we perform the insert and send back a positive response. If it's not, though, notice that unlike our `GET` method, we don't return any data. Instead, we send back a 403 error (forbidden) along with a message scolding our user. We let them know that their `POST` request must contain the data we're validating against. 
+
+Now we're cruising! Two left: `PUT` and `DELETE`.
+
+#### PUT Methods
+
+`PUT` methods are used for _updating_ an existing piece of data.
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  methods: {
+    pizza: {
+      put: function() {
+        var hasQuery  = API.utility.hasData( connection.data ),
+            validData = API.utility.validate( connection.data, Match.OneOf(
+              { "_id": String, "name": String },
+              { "_id": String, "crust": String },
+              { "_id": String, "toppings": [ String ] },
+              { "_id": String, "name": String, "crust": String },
+              { "_id": String, "name": String, "toppings": [ String ] },
+              { "_id": String, "crust": String, "toppings": [ String ] },
+              { "_id": String, "name": String, "crust": String, "toppings": [ String ] }
+            ));
+
+        if ( hasQuery && validData ) {
+          var pizzaId = connection.data._id;
+          delete connection.data._id;
+
+          var getPizza = Pizza.findOne( { "_id": pizzaId }, { fields: { "_id": 1 } } );
+
+          if ( getPizza ) {
+            Pizza.update( { "_id": pizzaId }, { $set: connection.data } );
+            API.utility.response( context, 200, { "message": "Pizza successfully updated!" } );
+          } else {
+            API.utility.response( context, 404, { "message": "Can't update a non-existent pizza, homeslice." } );
+          }
+        } else {
+          API.utility.response( context, 403, { error: 403, message: "PUT calls must have a pizza ID and at least a name, crust, or toppings passed in the request body in the correct formats (String, String, Array)." } );
+        }
+      }
+    }
+  },
+};
+```
+Woah! This isn't as scary as it looks. At this point we're not introducing anything new, just pushing the limits of what we already have. The first thing to point out is our validation, what is that thing? Well. Because a `PUT` request is all about updating existing objects, we may not always be updating using a `1:1` representation of the existing object (read: same fields each time). To compensate, we need to pass all of the different variations of objects we might get from our user. Seriously?! If we want to be on top of our game, yes. Here, we've simply considered each possible permutation of the object we could receive from our users. 
+
+Again, once we have verified that our data exists and is valid, we go to perform the update. First, though, we verify that the document we're trying to update actually exists. If it does, we carry on, it if it doesn't we send back an error letting the user know we can't update something that doesn't exist. Just like our `POST` request, if there's no data or it's invalid, we throw a `403` error letting them no to straighten up their act.
+
+Boom! Last one. Let's do this `DELETE` thing.
+
+#### DELETE Methods
+
+
+
 ### Consuming the API
 ### Wrap Up & Summary
