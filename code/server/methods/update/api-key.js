@@ -7,12 +7,11 @@ Meteor.methods({
   regenerateApiKey: function( userId ){
     check( userId, String );
 
-    var getUsersKey = APIKeys.findOne( { "owner": userId }, { fields: { "key": 1 } } ),
-        newKey      = Random.hexString( 32 );
+    var newKey = Random.hexString( 32 );
 
     // Perform the update.
     try {
-      var keyId = APIKeys.update( getUsersKey._id, {
+      var keyId = APIKeys.update( { "owner": userId }, {
         $set: {
           "key": newKey
         }

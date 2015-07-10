@@ -17,7 +17,7 @@ Template.apiKey.helpers({
 });
 
 Template.apiKey.events({
-  'click .regenerate-api-key': function( e, t ){
+  'click .regenerate-api-key': function(){
      var userId              = Meteor.userId(),
          confirmRegeneration = confirm( "Are you sure? This will invalidate your current key!" );
 
