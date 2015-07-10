@@ -1046,5 +1046,10 @@ HTTP.del( "http://localhost:3000/api/v1/pizza", {
 });
 ```
 
+When calling each of these methods (try playing with them in your browser console), you will receive either data or an error back as we defined in each of our response methods! Awesome! 
 
 ### Wrap Up & Summary
+
+There we have it! A full blown API, fit for consumption. In this recipe, we learned how to issue and reissue API keys, how to organize our API to keep things reusable and DRY, how to handle requests, how to _respond_ to requests, and finally, how to use the API. This was a lot of work and it is incredibly powerful. Now, you know how to allow other applications and developers to interact with your own application. Using what you learned here, you could build some really cool stuff!
+
+If you come up with your own API, push it to the Meteor servers and share it in the comments!
