@@ -40,9 +40,9 @@ We'll use the Random package to help us generate our API keys that users will in
 <p class="block-header">Terminal</p>
 
 ```bash
-meteor add ajduke:bootstrap-tokenfield
+meteor add http
 ```
-We'll use the Bootstrap Tokenfield package to help us with adding comma separated arrays of data to keep user input consistent.
+We'll use the HTTP package to help us test out our API once we're all done.
 
 <div class="note">
   <h3>Additional Packages <i class="fa fa-warning"></i></h3>
@@ -945,4 +945,106 @@ Almost _too_ simple, yeah? Our usual suspects `hasData` and `validate` take care
 
 
 ### Consuming the API
+
+Before we part ways, it would be helpful to understand how this API is actually _consumed_ by a user. When we say consumed, we really just mean "used." Like, "I'm so hungry, I'm going to use this burger right now." In order to test our methods out, we can make use of the `http` package. We're not going to do too deep of a dive here. Instead, let's just look at examples of each method, showing how the data can be passed.
+
+`GET` request using the HTTP package will need to pass data using either the `params` object that sits inside of the options object, or, as a string in the `query` parameter formatted like `keyName=value&anotherKey=anotherValue`. That last one, `query`, would be parsed on our server as:
+
+```javascript
+{
+  keyName: "value",
+  anotherKey: "anotherValue"
+}
+```
+
+<p class="block-header">GET Method</p>
+
+```javascript
+HTTP.get( "http://localhost:3000/api/v1/pizza", { 
+  headers: { 
+    "x-api-key": "27076c8a921bea09864758f96f15030d" 
+  },
+  params: { 
+    "name": "Pizza Name",
+    "crust": "Crust Name",
+    "toppings": [ 'an', 'array', 'of', 'toppings' ]
+  } 
+}, function( error, response ) {
+  if ( error ) {
+    console.log( error );
+  } else {
+    console.log( response );
+  }
+});
+```
+
+The `POST` method call is pretty simple. We just pass our data to the `data` object.
+
+<p class="block-header">POST Method</p>
+
+```javascript
+HTTP.post( "http://localhost:3000/api/v1/pizza", { 
+  headers: { 
+    "x-api-key": "27076c8a921bea09864758f96f15030d" 
+  },
+  data: { 
+    "name": "Pizza Name",
+    "crust": "Crust Name",
+    "toppings": [ 'an', 'array', 'of', 'toppings' ]
+  } 
+}, function( error, response ) {
+  if ( error ) {
+    console.log( error );
+  } else {
+    console.log( response );
+  }
+});
+```
+
+`PUT` is the same, but it can include any of our parameters `name`, `crust`, or `toppings`, but _requires_ an `_id` parameter so we know what pizza to update.
+
+<p class="block-header">PUT Method</p>
+
+```javascript
+HTTP.put( "http://localhost:3000/api/v1/pizza", { 
+  headers: { 
+    "x-api-key": "27076c8a921bea09864758f96f15030d" 
+  },
+  data: { 
+    "_id": "ID of the pizza to update",
+    "name": "Pizza Name",
+    "crust": "Crust Name",
+    "toppings": [ 'an', 'array', 'of', 'toppings' ]
+  } 
+}, function( error, response ) {
+  if ( error ) {
+    console.log( error );
+  } else {
+    console.log( response );
+  }
+});
+```
+
+`DELETE` is the most straightforward. We just need a single `_id` parameter to know which pizza to delete.
+
+<p class="block-header">DELETE Method</p>
+
+```javascript
+HTTP.del( "http://localhost:3000/api/v1/pizza", { 
+  headers: { 
+    "x-api-key": "27076c8a921bea09864758f96f15030d" 
+  },
+  data: { 
+    _id: "ID of the pizza to delete"
+  } 
+}, function( error, response ) {
+  if ( error ) {
+    console.log( error );
+  } else {
+    console.log( response );
+  }
+});
+```
+
+
 ### Wrap Up & Summary
