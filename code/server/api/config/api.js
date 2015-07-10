@@ -138,7 +138,6 @@ API = {
     response: function( context, statusCode, data ) {
       context.response.setHeader( 'Content-Type', 'application/json' );
       context.response.setHeader( 'Access-Control-Allow-Origin', '*' );
-      context.response.setHeader( 'Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept' );
       context.response.statusCode = statusCode;
       context.response.end( JSON.stringify( data ) );
     },
