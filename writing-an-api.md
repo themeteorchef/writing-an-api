@@ -79,7 +79,7 @@ In order for users to access our API, we need some sort of authentication. When 
 
 An API key allows us to accomplish this because of a few properties:
 
-1. It's a long, difficult to guess (unlike, potentially, a password) string of characters.
+1. It's a long, random, difficult to guess (unlike, potentially, a password) string of characters.
 2. It can be used to reference a user's account ID without compromising their username and password.
 3. It can be reset, meaning if a security breach _does_ occur, a user can invalidate an API key making it useless to anyone who uses it.
 
@@ -318,77 +318,25 @@ Let's get started by defining our resources.
 
 ### Defining our resources
 
-Recall that a resource is simply the thing in our application that a user is consuming. In order for them to consume it, we need to make that resource accessible at an _endpoint_. Again, an endpoint is simply a fancy name for a URL (or URI depending on [which way your door swings](https://danielmiessler.com/study/url_vs_uri/)). 
+For this recipe, we actually only have on resource: pizza. Recall that a resource is simply the thing in our application that a user is consuming. In order for them to consume it, we need to make that resource accessible at an _endpoint_. Again, an endpoint is simply a fancy name for a URL (or URI depending on [which way your door swings](https://danielmiessler.com/study/url_vs_uri/)). 
 
-To do this, we're going to use Iron Router's server side routing feature, and more specifically, the convenient RESTful API given to us by the package. First, let's look at how Iron Router's documentation explains it and then look at how we're going to abstract it into our `API` object pattern.
-
-```javascript
-Router.route('/webhooks/stripe', { where: 'server' })
-  .get(function () {
-    // GET /webhooks/stripe
-  })
-  .post(function () {
-    // POST /webhooks/stripe
-  })
-  .put(function () {
-    // PUT /webhooks/stripe
-  });
-```
-The idea here is that we define a route passing a path, an options object, and then use a series of chained methods, each one corresponding to an HTTP verb. WTF?! Let's step through it.
-
-With Iron Router, we start by defining our route with `Router.route( '/server/side/path', { where: 'server' } )`. If you've worked with Iron Router before, the first argument, the path, should look familiar. This is the URL relative to our application's address (e.g. `http://website.com/server/side/path`) that users will use to call on our API. 
-
-This is just like any URL you'd type into your browser, but with one difference: it's not meant to render anything on the page. In other words, this URL is meant to be accessed by a server using an HTTP request. Robot speak. Later on we'll see _how_ this URL is used to make a request. For now: just trust me. 
-
-The next part `{ where: 'server' }` is used to tell Iron Router that this route should be accessible on the server, but also that this route should get access to Node's `request` and `response` objects (what we'll use to receive a request and respond to it with). 
-
-Lastly, the `.get()`, `.post()`, and `.put()` are convenience methods that point to a function to be called when that route receives a request using _that_ method. So, if an HTTP request is made using the `POST` method, we'll call the `.post()` function. If it's made with a `GET` method, we'll use the `.get()` function, and so on.
-
-#### Using this with our API object
-
-To keep things simple, we want to break this up into two parts. First, we'll store our route definition inside of our `API` object like so:
-
-<p class="block-header">/server/api/config/api.js</p>
-
-```javascript
-API = {
-  resources: {
-    pizza: Router.route( '/api/v1/pizza', { where: 'server' } )
-  },
-};
-``` 
-Notice that here, we're pulling in everything _before_ each of the methods corresponding to verbs. This allows us to keep all of our resource definitions together and easily update URLs. 
-
-<div class="note">
-  <h3>Organization Style <i class="fa fa-warning"></i></h3>
-  <p>You don't have to split your definitions like this. I'm doing this here to consolidate things for the sake of organization. Defining your resources like it's shown in the Iron Router documentation will not break anything in this recipe.
-</div> 
-
-Okay, what about the other part? Let's check it out. 
+To do this, we're going to use Iron Router's server side routing feature. First, let's look at how our route is defined and then dive into how we use it.
 
 <p class="block-header">/server/api/resources/pizza.js</p>
 
 ```javascript
-API.resources.pizza.get( function() {
-  // We'll handle GET requests here.
-});
-
-API.resources.pizza.post( function() {
-  // We'll handle POST requests here.
-});
-
-API.resources.pizza.put( function() {
-  // We'll handle PUT requests here.
-});
-
-API.resources.pizza.delete( function() {
-  // We'll handle DELETE requests here.
-});
+Router.route( '/api/v1/pizza', function() {
+  // This is where we handle the request.
+}, { where: 'server' } );
 ```
 
-See what's going on? Instead of chaining our method calls like the example from Iron Router, here, we break each one up, tethering it back to our route definition in our API object. The reason we're placing this in a separate file is for the sake of clarity. Our example here only has one resource, but a real API could have several. Breaking each resource into its own file can help you better understand what calls are related to what resource. No spaghetti!
+Pretty simple, right? If you've worked with Iron Router before, this should look familiar. We're doing three things here:
 
-![Exploding spaghetti](http://media.giphy.com/media/BGogoDla5iydi/giphy.gif)
+1. Passing a `path` parameter to let Iron Router know what URL (relative to our application's domain) our resource will be accessible at.
+2. A callback function that will be called whenever our route is visited.
+3. An `options` parameter with a `where` setting set to `'server'`.
+
+When we define a route like this on the server, we end up giving this route access to Node's `request` and `response` methods. These are what we'll use to communicate with HTTP requests. Again, the `request` being what we _receive_ and `response` being what we _send back_. Let's look at how we're actually using this for our own API.
 
 <div class="note">
   <h3>API Versioning <i class="fa fa-warning"></i></h3>
@@ -396,8 +344,50 @@ See what's going on? Instead of chaining our method calls like the example from 
 <p>This is honestly a bit heady and confusing at first. I highly recommend checking out <a href="http://www.heavybit.com/library/video/2014-09-30-amber-feng">this talk by Amber Feng, the Product Engineering Lead at Stripe</a>. In it she discusses some of the design principles behind their API. It's well worth the half hour watch if you want to start thinking seriously about the design of your API. Food for thought!</p>
 </div>
 
+<p class="block-header">/server/api/resources/pizza.js</p>
+
+```javascript
+Router.route( '/api/v1/pizza', function() {
+  this.response.setHeader( 'Access-Control-Allow-Origin', '*' );
+
+  if ( this.request.method === "OPTIONS" ) {
+    this.response.setHeader( 'Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept' );
+    this.response.setHeader( 'Access-Control-Allow-Methods', 'POST, PUT, GET, DELETE, OPTIONS' );
+    this.response.end( 'Set OPTIONS.' );
+  } else {
+    API.handleRequest( this, 'pizza', this.request.method );
+  }
+
+}, { where: 'server' } );
+```
+
+What in the blue blazes is _this_? Welcome, friend, to the wild west that is handling HTTP requests. This isn't as scary as it looks, but it is important to pay attention. Otherwise prepare to sink countless hours into fighting with CORS.
+
+What is CORS, you ask? [CORS (Cross Origin Resource Sharing)](https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS) is a standard used by browser makers to handle secure communication between web servers using HTTP. In theory, CORS is great. It should allow us to easily define who is allowed to communicate with our application and _what_ they're allowed to share with us. If only it were that easy.
+
+#### Pre-flight OPTIONS requests
+
+When an HTTP request is made to our server from an origin (domain) other than the one where the app is living, CORS will perform a process known as "pre-flight." This means that before an actual request is processed, CORS will call to the server being requested to make sure that it's allowed to send the request as well as what it's allowed to send with it. This is like that super paranoid parent calling ahead to the pool party to make sure a life guard will be on duty in case Little Jimmy gets tangled up in one of his pool noodles. _Sigh_.
+
+What you see in the example above is how we need to negotiate this `OPTIONS` request. First, we "globally" (meaning for any type of HTTP request, `OPTIONS` or otherwise) set something called `Access-Control-Allow-Origin`. This rule says from which domains a request is allowed to come from. Here, we've set this to `*` (an asterisk) to say "any domain can send us a request." Keep in mind, you may not always want to do this. If your API requires significant security, invest some time into researching this setting so that you only allow the domains you really want making requests.
+
+Next, we test our request's method to see if it _is_ an `OPTIONS` method and if its, we do three things:
+
+1. Set the `Access-Control-Allow-Headers` parameter to let our request know which HTTP headers are safe to send with the request.
+2. Set the `Access-Control-Allow-Methods` parameter to let our request know which type of HTTP requests we allow.
+3. End the response to the `OPTIONS` request passing an arbitrary message.
+
+What this accomplishes is a phone call back to Little Jimmy's parents saying "yes, a life guard will be on duty," or, "here is how you're allowed to communicate with this server." Make sense?
+
+<div class="note">
+  <h3>CORS is a pain</h3>
+  <p>While I've simplified it down quite a bit here, don't let it fool you: CORS is a jerk. It took quite a bit of time to find the solution you see above. This <em>should</em> cover you for most cases, but fair warning, CORS will drive you insane depending on what you want to accomplish.</p>
+</div>
+
+Now that CORS is handled, we can dig into _actually_ handling our request.
+
 ### Handling requests
-Okay. We've got our endpoints all ready to go so now we need to start talking about handling requests. Remember, we're going to focus on handling the four most popular types of requests: `GET`, `POST`, `PUT`, and `DELETE`. This is where we're going to put on our engineering cap, so pay close attention. Our goal is to bake all of our functionality into our `API` object in such a way that we can reuse pieces and avoid duplication. Let's dig in!
+Okay. We've got our endpoint all ready to go so now we need to start talking about handling requests. Remember, we're going to focus on handling the four most popular types of requests: `GET`, `POST`, `PUT`, and `DELETE`. This is where we're going to put on our engineering cap, so pay close attention. Our goal is to bake all of our functionality into our `API` object in such a way that we can reuse pieces and avoid duplication. Let's dig in!
 
 #### handleRequest
 
@@ -406,21 +396,7 @@ Because all of our requests will need to perform some common tasks that are not 
 <p class="block-header">/server/api/resources/pizza.js</p>
 
 ```javascript
-API.resources.pizza.get( function() {
-  API.handleRequest( this, 'pizza', 'get' );
-});
-
-API.resources.pizza.post( function() {
-  API.handleRequest( this, 'pizza', 'post' );
-});
-
-API.resources.pizza.put( function() {
-  API.handleRequest( this, 'pizza', 'put' );
-});
-
-API.resources.pizza.delete( function() {
-  API.handleRequest( this, 'pizza', 'delete' );
-});
+API.handleRequest( this, 'pizza', this.request.method );
 ```
 
 Woah buddy. What the heck is going on here? Each of our requests will need to perform some common tasks like authentication and getting data _out of the request_. The `handleRequest` function that we're going to define below will be responsible for taking in arguments specific to the type of request and then _delegating_ those to the right methods. Let that sink in. Think of `handleRequst` like the post office clerk sorting mail. It will put the right letters (requests) into the right mailboxes (methods). Stick with me, this will start to make sense in a bit.
@@ -451,38 +427,61 @@ When a user "connects" to our API, we need to do two things: authenticate their 
 ```javascript
 API = {
   connection: function( request ) {
-    var apiKey    = request.headers[ 'x-api-key' ],
-        validUser = API.authentication( apiKey );
+    var getRequestContents = API.utility.getRequestContents( request ),
+        apiKey             = getRequestContents.api_key,
+        validUser          = API.authentication( apiKey );
 
     if ( validUser ) {
-      var getRequestContents = API.utility.getRequestContents( request ),
-          requestData        = { "owner": validUser, data: getRequestContents };
-      return requestData;
+      delete getRequestContents.api_key;
+      return { owner: validUser, data: getRequestContents };
     } else {
       return { error: 401, message: "Invalid API key." };
+    }
+  },
+};
+```
+
+Hang in there. This first step, `connection` is responsible for pulling apart our request to get some information. First, we need to get our user's API key. In order to authenticate each of their requests, we ask that our users pass their API key as part of either the `query` parameters in their request or, as part of the `body` in their request. We'll see how our user sets these later. For now, just know that we ask our users to store their API key in either the `query` or `body` object as a parameter labeled `api_key`. 
+
+To get the actual `api_key` value, we first use a method called `getRequestContents`. This method takes our `request` object and returns the correct object, `query` or `body`, depending on the type of request. That may be a little confusing, let's take a look.
+
+#### utility.getRequestContents
+
+<p class="block-header">/server/api/config/api.js</p>
+
+```javascript
+API = {
+  utility: {
+    getRequestContents: function( request ) {
+      switch( request.method ) {
+        case "GET":
+          return request.query;
+        case "POST":
+        case "PUT":
+        case "DELETE":
+          return request.body;
+      }
     }
   }
 };
 ```
 
-Hang in there. This first step, `connection` is responsible for pulling apart our request to get some information. First, we need to get our user's API key. In order to authenticate each of their requests, we ask that our users pass their API key as part of the HTTP request's `headers`. What are those?
+See what's happening here? We're using a JavaScript switch method to look at what type of method is being called ( `GET`, `POST`, `PUT`, or `DELETE`), returning the object where we expect our data to be passed. `GET` requests are expected to pass data in the `query` object, while `POST`, `PUT`, and `DELETE` are expected to pass data in the `body` object. This just keeps our code a little cleaner! Awesome. 
 
-<blockquote>
-  <p>HTTP header fields are components of the header section of request and response messages in the Hypertext Transfer Protocol (HTTP). They define the operating parameters of an HTTP transaction.
-</p>
-  <cite>&mdash; <a href="https://en.wikipedia.org/wiki/List_of_HTTP_header_fields">List of HTTP header fields on Wikipedia</a></cite>
-</blockquote>
-
-We'll see how our user sets these later. For now, just know that we ask our users to store their API key in the `headers` object as a parameter labeled `x-api-key`. To make this a little clearer, here is how this is structured:
+<p class="block-header">/server/api/config/api.js</p>
 
 ```javascript
-request: {
-  headers: {
-    "x-api-key": "Our users API key is here."
-  }
-}
+API = {
+  connection: function( request ) {
+    var getRequestContents = API.utility.getRequestContents( request ),
+        apiKey             = getRequestContents.api_key,
+        validUser          = API.authentication( apiKey );
+    [...]
+  },
+};
 ```
-Next, we need to jump down another level and check whether or not the API key they've passed is _valid_. To do this, we've created another function `API.authentication()`.
+
+Back in our `connection` method, once we have the `query` or `body` object, we can pull out our API key. Let's take a look at how we authenticate requests so this all makes sense.
 
 #### Authenticating requests
 
@@ -510,17 +509,17 @@ Pretty simple, right? We do a `findOne` on our `APIKeys` collection for the key 
 ```javascript
 API = {
   connection: function( request ) {
-    var apiKey    = request.headers[ 'x-api-key' ],
-        validUser = API.authentication( apiKey );
+    var getRequestContents = API.utility.getRequestContents( request ),
+        apiKey             = getRequestContents.api_key,
+        validUser          = API.authentication( apiKey );
 
     if ( validUser ) {
-      var getRequestContents = API.utility.getRequestContents( request ),
-          requestData        = { "owner": validUser, data: getRequestContents };
-      return requestData;
+      delete getRequestContents.api_key;
+      return { owner: validUser, data: getRequestContents };
     } else {
       return { error: 401, message: "Invalid API key." };
     }
-  }
+  },
 };
 ```
 See how we're assigning the result of `API.authentication()` to the `validUser` variable? This is allowing us to halt the request and return an error if the API key we've received is invalid. Note that here, we're simply returning an object with an `error` parameter containing an HTTP status code and a `message` parameter to explain what went wrong. We'll look at how this is utilized in a bit. Next, let's look at what happens when an API key _is valid_.
@@ -530,50 +529,26 @@ See how we're assigning the result of `API.authentication()` to the `validUser` 
    <p>Woof! This is a lot, I know, but the payoff is worth it. Let's take five and grab a snack.</p>
 </div>
 
-#### utility.getRequestContents
-
-Alright, so. If our API key is valid, we want to retrieve the data from our request. Depending on the type of request we receive, we expect that data to be in one of two places _within_ our `request` object: `query` or `body`. `getRequestContents()` will help us figure all of that out and return the correct data. 
-
-<p class="block-header">/server/api/config/api.js</p>
-
-```javascript
-API = {
-  utility: {
-    getRequestContents: function( request ) {
-      switch( request.method ) {
-        case "GET":
-          return request.query;
-        case "POST":
-        case "PUT":
-        case "DELETE":
-          return request.body;
-      }
-    }
-  }
-};
-```
-Pretty harmless, right? Here, we take our request and run it through a JavaScript `switch` statement. If our request is of the `GET` type, we want to return the `query` object. If it's a `POST`, `PUT`, or `DELETE`, we want to return the `body` object. If you're unfamiliar with it, the reason we're "stacking" the last three types is to use a concept known as "fallthrough" which is like saying `POST || PUT || DELETE`. Easy peasy. Back up to our connection script one last time to see how we package this up.
-
 <p class="block-header">/server/api/config/api.js</p>
 
 ```javascript
 API = {
   connection: function( request ) {
-    var apiKey    = request.headers[ 'x-api-key' ],
-        validUser = API.authentication( apiKey );
+    [...]
 
     if ( validUser ) {
-      var getRequestContents = API.utility.getRequestContents( request ),
-          requestData        = { "owner": validUser, data: getRequestContents };
-      return requestData;
+      delete getRequestContents.api_key;
+      return { owner: validUser, data: getRequestContents };
     } else {
       return { error: 401, message: "Invalid API key." };
     }
-  }
+  },
 };
 ```
 
-Last step for our connection! With the response of `utility.getRequestContents()` stored in our `getRequestContents` variable, we create a new object to return to the client. Here, we assign two parameters: `owner`, equal to our user's ID obtained during our authentication step, and `data`, the data we just retrieved from the request. Boom! Let's jump back up to our `handleRequest()` call to see how this all plays out.
+Last step for our connection! With the response of `utility.getRequestContents()` stored in our `getRequestContents` variable, we create a new object to return to the client. Here, we assign two parameters: `owner`, equal to our user's ID obtained during our authentication step, and `data`, the data we just retrieved from the request. Boom! Note: before we assign `getRequestContents` to the `data` parameter, we remove the `api_key` value from it since it's no longer needed.
+
+Let's jump back up to our `handleRequest()` call to see how this all plays out.
 
 <p class="block-header">/server/api/config/api.js</p>
 
@@ -607,18 +582,14 @@ API = {
   utility: {
     response: function( context, statusCode, data ) {
       context.response.setHeader( 'Content-Type', 'application/json' );
-      context.response.setHeader( 'Access-Control-Allow-Origin', '*' );
       context.response.statusCode = statusCode;
       context.response.end( JSON.stringify( data ) );
     }
   }
 };
 ```
-Enough with the jokes! This isn't a joke, I swear. Instead, this is how we have to respond to an HTTP request. It's actually simpler than it looks.
 
-First, we need to set some `headers` that let our request know two things: what type of content we're sending back to it (`JSON`), and that we're totally cool with it sending us its request. That second part, `Access-Control-Allow-Origin` is a little confusing. This header is a security measure implemented by the [CORS (Cross Origin Resource Sharing)](https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS) specification. In normal people terms, this essentially says from what domains a request can be made. 
-
-By default, requests are only allowed from the same domain, e.g. I can only make a request from `http://tmc-008-demo.meteor.com` _to_ `http://tmc-008-demo.meteor.com`. If, say, I try to to make a request to that address from `http://localhost:3000`, I'd get an error. This is where `Access-Control-Allow-Origin` comes in. It let's us say who is and isn't allowed to send us requests. Because we want our API accessible to everyone, we can set the value of this header to `*` (an asterisk), meaning "anyone." 
+This is pretty straightforward. We start by setting a header `Content-Type` equal to `application/json`. This lets the requesting server know what type of data we intend to send back. To keep things simple we'll be sending back `JSON` data. This can be a lot of different things, so make sure to set it depending on the _actual_ data your API is responding with.
 
 Once that is set, we need to respond with an HTTP status code. Remember, this is the three digit number that servers use to refer to certain events. We're getting this, here, as an argument to our `utility.response()` method. When we set this, we're telling the requesting server the result of their request.
 
@@ -632,11 +603,6 @@ _Finally_, we're ending our response to the request, passing our data. Here, we 
 This means that we can safely transmit our data in our response as `JSON` data. Note: we're doing this because our request is expecting `JSON` data to be returned. Why? Because that's what we told it we're responding with a few lines earlier when we set `context.response.setHeader( 'Content-Type', 'application/json' )`! 
 
 That's it for our `utility.response()` method. Let's jump back up and take a look at how we're (finally) handling the response.
-
-<div class="note danger">
-  <h3>Access Control Etc. <i class="fa fa-frown-o"></i></h3>
-  <p>The bulk of this CORS stuff is pretty confusing. It <em>does</em> server a purpose (security) and from experimenting, what we've covered here should be sufficient. Depending on what your API is doing, I'd recommend doing a little research to make sure you've covered all of your bases (read: take this with a grain of salt, it's not perfect).</p>
-</div>
 
 ### Handling responses
 
@@ -665,15 +631,15 @@ See that `API.methods[ resource ][ method ]( context, connection );` part? This 
 API = {
   methods: {
     pizza: {
-      get: function( context, connection ) {},
-      post: function( context, connection ) {},
-      put: function( context, connection ) {},
-      delete: function( context, connection ) {}
+      GET: function( context, connection ) {},
+      POST: function( context, connection ) {},
+      PUT: function( context, connection ) {},
+      DELETE: function( context, connection ) {}
     }
   },
 };
 ```
-See the mapping here? In our `handleRequest` method, we were doing `API.methods[ resource ][ method ]( context, connection )` which is like saying `API.methods.pizza.get( context, connection );` We use bracket notation to allow for variable object/method names. If we had another resource called `tacos` and we wanted to call its `put` method, we'd get something like `API.methods.tacos.put( context, connection );`. Make sense?
+See the mapping here? In our `handleRequest` method, we were doing `API.methods[ resource ][ method ]( context, connection )` which is like saying `API.methods.pizza.GET( context, connection );` We use bracket notation to allow for variable object/method names. If we had another resource called `tacos` and we wanted to call its `put` method, we'd get something like `API.methods.tacos.PUT( context, connection );`. Make sense?
 
 Because our resource `pizza` supports `GET`, `POST`, `PUT`, and `DELETE` methods, we've defined a function for each HTTP method that will be called when we receive that type of request. Handy! Now for the fun part: making our methods do something. 
 
@@ -687,7 +653,7 @@ Because our resource `pizza` supports `GET`, `POST`, `PUT`, and `DELETE` methods
 API = {
   methods: {
     pizza: {
-      get: function( context, connection ) {
+      GET: function( context, connection ) {
         var hasQuery = API.utility.hasData( connection.data );
 
         if ( hasQuery ) {
@@ -733,7 +699,7 @@ Easy peasy! But super important. What we're doing here is taking the `data` para
 API = {
   methods: {
     pizza: {
-      get: function( context, connection ) {
+      GET: function( context, connection ) {
         var hasQuery = API.utility.hasData( connection.data );
 
         if ( hasQuery ) {
@@ -780,7 +746,7 @@ Okay, ready to keep swinging? Next up is handling `POST` methods. The good news?
 API = {
   methods: {
     pizza: {
-      post: function( context, connection ) {
+      POST: function( context, connection ) {
         var hasData   = API.utility.hasData( connection.data ),
             validData = API.utility.validate( connection.data, { "name": String, "crust": String, "toppings": [ String ] });
 
@@ -826,7 +792,7 @@ If you're following along, we're making this reusable to keep everything tidy. H
 API = {
   methods: {
     pizza: {
-      post: function( context, connection ) {
+      POST: function( context, connection ) {
         var hasData   = API.utility.hasData( connection.data ),
             validData = API.utility.validate( connection.data, { "name": String, "crust": String, "toppings": [ String ] });
 
@@ -859,7 +825,7 @@ Now we're cruising! Two left: `PUT` and `DELETE`.
 API = {
   methods: {
     pizza: {
-      put: function() {
+      PUT: function() {
         var hasQuery  = API.utility.hasData( connection.data ),
             validData = API.utility.validate( connection.data, Match.OneOf(
               { "_id": String, "name": String },
@@ -907,7 +873,7 @@ I bet you can guess what a `DELETE` request does? Yup! It deletes something. _Mi
 API = {
   methods: {
     pizza: {
-      delete: function( context, connection ) {
+      DELETE: function( context, connection ) {
         var hasQuery  = API.utility.hasData( connection.data ),
             validData = API.utility.validate( connection.data, { "_id": String } );
 
@@ -956,10 +922,8 @@ Before we part ways, it would be helpful to understand how this API is actually 
 
 ```javascript
 HTTP.get( "http://localhost:3000/api/v1/pizza", { 
-  headers: { 
-    "x-api-key": "27076c8a921bea09864758f96f15030d" 
-  },
   params: { 
+    "api_key": "Our API key goes here",
     "name": "Pizza Name",
     "crust": "Crust Name",
     "toppings": [ 'an', 'array', 'of', 'toppings' ]
@@ -981,10 +945,8 @@ The `POST` method call is pretty simple. We just pass our data to the `data` obj
 
 ```javascript
 HTTP.post( "http://localhost:3000/api/v1/pizza", { 
-  headers: { 
-    "x-api-key": "27076c8a921bea09864758f96f15030d" 
-  },
   data: { 
+    "api_key": "Our API key goes here",
     "name": "Pizza Name",
     "crust": "Crust Name",
     "toppings": [ 'an', 'array', 'of', 'toppings' ]
@@ -1006,10 +968,8 @@ HTTP.post( "http://localhost:3000/api/v1/pizza", {
 
 ```javascript
 HTTP.put( "http://localhost:3000/api/v1/pizza", { 
-  headers: { 
-    "x-api-key": "27076c8a921bea09864758f96f15030d" 
-  },
   data: { 
+    "api_key": "Our API key goes here",
     "_id": "ID of the pizza to update",
     "name": "Pizza Name",
     "crust": "Crust Name",
@@ -1032,10 +992,8 @@ HTTP.put( "http://localhost:3000/api/v1/pizza", {
 
 ```javascript
 HTTP.del( "http://localhost:3000/api/v1/pizza", { 
-  headers: { 
-    "x-api-key": "27076c8a921bea09864758f96f15030d" 
-  },
   data: { 
+    "api_key": "Our API key goes here",
     _id: "ID of the pizza to delete"
   } 
 }, function( error, response ) {
