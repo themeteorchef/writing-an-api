@@ -8,13 +8,16 @@ API = {
     }
   },
   connection: function( request ) {
-    var apiKey    = request.headers[ 'x-api-key' ],
-        validUser = API.authentication( apiKey );
+    var getRequestContents = API.utility.getRequestContents( request ),
+        apiKey             = getRequestContents.api_key,
+        validUser          = API.authentication( apiKey );
 
     if ( validUser ) {
-      var getRequestContents = API.utility.getRequestContents( request ),
-          requestData        = { "owner": validUser, data: getRequestContents };
-      return requestData;
+      // Now that we've validated our user, we make sure to scrap their API key
+      // from the data we received. Next, we return a new object containing our
+      // user's ID along with the rest of the data they sent.
+      delete getRequestContents.api_key;
+      return { owner: validUser, data: getRequestContents };
     } else {
       return { error: 401, message: "Invalid API key." };
     }
@@ -29,7 +32,7 @@ API = {
   },
   methods: {
     pizza: {
-      get: function( context, connection ) {
+      GET: function( context, connection ) {
         // Check to see if our request has any data. If it doesn't, we want to
         // return all pizzas for the owner. If it does, we want to search for
         // pizzas matching that query.
@@ -37,6 +40,12 @@ API = {
 
         if ( hasQuery ) {
           connection.data.owner = connection.owner;
+          // Note: we're doing a very simple find on our data here. This means that
+          // with something like our Toppings parameter, we're looking for the
+          // exact array passed (not the individual items in the array). To do
+          // that, you'd need to parse out the array items from connection.data
+          // and use the Mongo $in operator like:
+          // Pizza.find( { "toppings": { $in: connection.data.toppings } } );
           var getPizzas = Pizza.find( connection.data ).fetch();
 
           if ( getPizzas.length > 0 ) {
@@ -55,7 +64,7 @@ API = {
           API.utility.response( context, 200, getPizzas );
         }
       },
-      post: function( context, connection ) {
+      POST: function( context, connection ) {
         // Make sure that our request has data and that the data is valid.
         var hasData   = API.utility.hasData( connection.data ),
             validData = API.utility.validate( connection.data, { "name": String, "crust": String, "toppings": [ String ] });
@@ -68,7 +77,7 @@ API = {
           API.utility.response( context, 403, { error: 403, message: "POST calls must have a name, crust, and toppings passed in the request body in the correct formats." } );
         }
       },
-      put: function( context, connection ) {
+      PUT: function( context, connection ) {
         var hasQuery  = API.utility.hasData( connection.data ),
             validData = API.utility.validate( connection.data, Match.OneOf(
               { "_id": String, "name": String },
@@ -98,7 +107,7 @@ API = {
           API.utility.response( context, 403, { error: 403, message: "PUT calls must have a pizza ID and at least a name, crust, or toppings passed in the request body in the correct formats (String, String, Array)." } );
         }
       },
-      delete: function( context, connection ) {
+      DELETE: function( context, connection ) {
         var hasQuery  = API.utility.hasData( connection.data ),
             validData = API.utility.validate( connection.data, { "_id": String } );
 
@@ -118,9 +127,6 @@ API = {
       }
     }
   },
-  resources: {
-    pizza: Router.route( '/api/v1/pizza', { where: 'server' } )
-  },
   utility: {
     getRequestContents: function( request ) {
       switch( request.method ) {
@@ -137,7 +143,6 @@ API = {
     },
     response: function( context, statusCode, data ) {
       context.response.setHeader( 'Content-Type', 'application/json' );
-      context.response.setHeader( 'Access-Control-Allow-Origin', '*' );
       context.response.statusCode = statusCode;
       context.response.end( JSON.stringify( data ) );
     },
