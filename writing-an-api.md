@@ -297,10 +297,10 @@ API = {
   handleRequest: function( context, resource, method ) {},
   methods: {
     pizza: {
-      get: function( context, connection ) {},
-      post: function( context, connection ) {},
-      put: function( context, connection ) {},
-      delete: function( context, connection ) {}
+      GET: function( context, connection ) {},
+      POST: function( context, connection ) {},
+      PUT: function( context, connection ) {},
+      DELETE: function( context, connection ) {}
     }
   },
   resources: {},
