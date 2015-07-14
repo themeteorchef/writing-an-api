@@ -1,7 +1,7 @@
 ##### The Meteor Chef
 ###### \#008 - Writing an API
 
-In this recipe we'll learn how to write a RESTful API. We'll learn how to structure our API for reusability, issue API keys to our users, create server side routes that can send and receive data, and look at handling errors and unwanted requests. We'll even look at how others will use our API!
+In this recipe we'll learn how to write a RESTful API. We'll learn how to structure our API for reusability, issue API keys to our users, create server side routes that can send and receive data, and look at handling errors and unwanted requests. We'll also look at how to use our API!
 
 [Read on The Meteor Chef](http://themeteorchef.com/recipes/writing-an-api)  
 
