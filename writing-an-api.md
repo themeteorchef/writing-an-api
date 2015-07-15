@@ -96,7 +96,7 @@ When our user first signs up, they haven't had a chance to generate an API key s
 ```javascript
 Meteor.methods({
   initApiKey: function( userId ) {
-    check( userId, String );
+    check( userId, Meteor.userId() );
 
     var newKey = Random.hexString( 32 );
 
@@ -113,7 +113,7 @@ Meteor.methods({
 });
 ```
 
-Super simple, right? We start by using `check()` to verify that our `userId` is a string. Next, we generate a new API key for them using the Random package's `hexString()` method. Note: here we pass the number `32` meaning we want our randomly generated key to be 32 characters in length. This number can be customized, so if you want more or less security, you can change it to fit your needs.
+Super simple, right? We start by using `check()` to verify that our `userId` is equal to the currently logged in user. Next, we generate a new API key for them using the Random package's `hexString()` method. Note: here we pass the number `32` meaning we want our randomly generated key to be 32 characters in length. This number can be customized, so if you want more or less security, you can change it to fit your needs.
 
 Next, we `try` to insert a new key for our user into the `APIKeys` collection. Wait a minute! Where did this come from?! This collection was [setup beforehand](https://github.com/themeteorchef/writing-an-api/blob/master/code/collections/api-keys.js), but let's talk about _why_ we have a separate collection to begin with. The reason we want to separate our API key storage from the more predictable location of our user's `profile` (the writable portion of a user's record in the `Meteor.users()` collection) is that [by default, the `profile` object is _writable_](http://joshowens.me/the-curious-case-of-the-unknowing-leaky-meteor-security/). 
 
@@ -240,7 +240,7 @@ Alright! Let's hop over to the server and take a look at how this is working.
 ```javascript
 Meteor.methods({
   regenerateApiKey: function( userId ){
-    check( userId, String );
+    check( userId, Meteor.userId() );
 
     var newKey = Random.hexString( 32 );
 
