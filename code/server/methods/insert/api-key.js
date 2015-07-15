@@ -5,7 +5,7 @@
 
 Meteor.methods({
   initApiKey: function( userId ) {
-    check( userId, String );
+    check( userId, Meteor.userId() );
 
     var newKey = Random.hexString( 32 );
 
