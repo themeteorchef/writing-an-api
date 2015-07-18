@@ -158,7 +158,7 @@ Okay! We have a key, but how do we see it and regenerate it? Let's take a look a
       <p>To gain access to the Pizza API, use the following API Key. Make sure to keep it super safe! <strong>If you'd like to generate a new key, click the "refresh" icon on the field below</strong>.</p>
       <label class="sr-only" for="apiKey">Your API Key</label>
       <div class="input-group">
-        <input type="text" disabled class="form-control" id="apiKey" placeholder="API Key" value="{{apiKey}}">
+        <input type="text" readonly class="form-control" id="apiKey" placeholder="API Key" value="{{apiKey}}">
         <div class="input-group-addon regenerate-api-key"><i class="fa fa-refresh"></i></div>
       </div>
     </div>
