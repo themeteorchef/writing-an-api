@@ -175,7 +175,7 @@ Template.apiKey.onCreated(function(){
 });
 ```
 
-First, we need a way to _see_ our API key. In order to do this, we can make use of Meteor's new [template-level subscriptions](http://docs.meteor.com/#/full/Blaze-TemplateInstance-subscribe) to subscribe to our data. So it's clear, let's look at the publication this subscription is calling on real quick.
+First, we need a way to _see_ our API key. In order to do this, we can make use of Meteor's new [template-level subscriptions](https://docs.meteor.com/#/full/Blaze-TemplateInstance-subscribe) to subscribe to our data. So it's clear, let's look at the publication this subscription is calling on real quick.
 
 <p class="block-header">/server/publications/api-key.js</p>
 
@@ -231,7 +231,7 @@ Template.apiKey.events({
 ```
 Two steps here. Because the regeneration action is _destructive_ meaning once this button is pushed the current API key is completely overwritten, we need to ask the user if they're sure. So, who cares? Well, as we'll learn in a bit, only the currently set API key is active. Again, this is a security measure so that if a key is leaked, our user can generate a new one effectively invalidating the old one. This means that if someone were to try and make an HTTP request on our API using that old key, they'd get an error! We are _so considerate_ of our users. 
 
-![David Mitchell pointing](http://media.giphy.com/media/n988gduPMFC8w/giphy.gif)
+![David Mitchell pointing](https://media.giphy.com/media/n988gduPMFC8w/giphy.gif)
 
 Alright! Let's hop over to the server and take a look at how this is working.
 
@@ -341,7 +341,7 @@ When we define a route like this on the server, we end up giving this route acce
 <div class="note">
   <h3>API Versioning <i class="fa fa-warning"></i></h3>
   <p>You may have noticed that the URL for our endpoints is prefixed with /api/v1. What's that? Just like a piece of software, we want to version our API so that consumers of our API know what functionality they have access to with each iteration.</p> <p>For example, we might want to change an endpoint's URL but we don't want to break the existing version. What we can do, then, is create a new version of our API, prefixing all new URLs with the new version. Because this is the <em>first</em> iteration of our API, we prefix all of our URLs with /api/v1/. In the future, we'll keep all of our /api/v1/ urls accessible, while still allowing us to expand our API by changing out the version number.</p>
-<p>This is honestly a bit heady and confusing at first. I highly recommend checking out <a href="http://www.heavybit.com/library/video/2014-09-30-amber-feng">this talk by Amber Feng, the Product Engineering Lead at Stripe</a>. In it she discusses some of the design principles behind their API. It's well worth the half hour watch if you want to start thinking seriously about the design of your API. Food for thought!</p>
+<p>This is honestly a bit heady and confusing at first. I highly recommend checking out <a href="https://www.heavybit.com/library/video/2014-09-30-amber-feng">this talk by Amber Feng, the Product Engineering Lead at Stripe</a>. In it she discusses some of the design principles behind their API. It's well worth the half hour watch if you want to start thinking seriously about the design of your API. Food for thought!</p>
 </div>
 
 <p class="block-header">/server/api/resources/pizza.js</p>
