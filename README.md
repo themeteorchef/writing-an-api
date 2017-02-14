@@ -1,12 +1,15 @@
-##### The Meteor Chef
-###### \#008 - Writing an API
+#### Tutorial: Writing a RESTful API
 
-In this recipe we'll learn how to write a RESTful API. We'll learn how to structure our API for reusability, issue API keys to our users, create server side routes that can send and receive data, and look at handling errors and unwanted requests. We'll also look at how to use our API!
+undefined
 
-[Read on The Meteor Chef](http://themeteorchef.com/recipes/writing-an-api)  
+[Read this tutorial on The Meteor Chef](https://themeteorchef.com/tutorials/writing-an-api)  
 
-[Demo the Recipe](http://tmc-008-demo.meteor.com)  
+[Download the source (.zip)](https://github.com/themeteorchef/writing-an-api/archive/master.zip)
 
-[Download the Source](https://github.com/themeteorchef/writing-an-api/archive/master.zip)
+---
 
-The code for this recipe is licensed under the [MIT License](http://opensource.org/licenses/MIT).
+**Need help with this?** [Sign up for a Mentorship appointment](https://themeteorchef.com/mentorship?readme=writing-an-api) and get 1-on-1 help.
+
+---
+
+_The code for this tutorial is licensed under the [MIT License](http://opensource.org/licenses/MIT)_.
